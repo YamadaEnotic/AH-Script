@@ -97,11 +97,11 @@ apply_custom_style()
 
 -- [x] -- Переменные. -- [x] --
 update_state = false
-local script_version = 1
-local script_version_text = "0.1"
+local script_version = 2
+local script_version_text = "0.2"
 local update_url = "https://raw.githubusercontent.com/YamadaEnotic/AH-Script/master/update.ini"
 local update_path = getWorkingDirectory() .. '/update.ini'
-local script_url = ""
+local script_url = "https://raw.githubusercontent.com/YamadaEnotic/AH-Script/master/AH_Bred.lua"
 local script_path = thisScript().path
 local tag = "{0777A3}[AH by Yamada.]: {CCCCCC}"
 local sw, sh = getScreenResolution()
@@ -993,9 +993,9 @@ function imgui.OnDrawFrame()
 				downloadUrlToFile(script_url, script_path, function(id, status)
 					if status == dlstat.STATUS_ENDDOWNLOADDATA then
 						showNotification("Обновление!", "Скрипт успешно обновлен!")
+						thisScript():reload()
 					end
 				end)
-				thisScript():reload()
 			end
 		else
 			imgui.SetCursorPosY(imgui.GetWindowHeight() - 25)

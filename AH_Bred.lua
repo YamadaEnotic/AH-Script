@@ -107,7 +107,7 @@ local tag = "{0777A3}[AH by Yamada.]: {CCCCCC}"
 local sw, sh = getScreenResolution()
 local directIni	= "AH_Setting\\config.ini"
 local font_ac
-local load_audio = loadAudioStream('moonloader/Module/audio/notification.mp3')
+local load_audio = loadAudioStream('moonloader/config/AH_Setting/audio/notification.mp3')
 local defTable = {
 	setting = {
 		Tranparency = false,
@@ -979,12 +979,12 @@ function imgui.OnDrawFrame()
 		imgui.Begin(u8"Настройки скрипта.", i_setting_items)
 		imgui.Text(u8"Быстрые ответы на ANS.")
 		imgui.SameLine()
-		--[[imgui.SetCursorPosX(imgui.GetWindowWidth() - 35)
-		imgui.ToggleButton("##1", setting_items.Fast_ans)
-		imgui.Text(u8"Сокращенные команды наказаний.")
-		imgui.SameLine()]]
 		imgui.SetCursorPosX(imgui.GetWindowWidth() - 35)
-		imgui.ToggleButton("##3", setting_items.Punishments)
+		imgui.ToggleButton("##1", setting_items.Fast_ans)
+		--[[imgui.Text(u8"Сокращенные команды наказаний.")
+		imgui.SameLine()
+		imgui.SetCursorPosX(imgui.GetWindowWidth() - 35)
+		imgui.ToggleButton("##3", setting_items.Punishments)]]
 		imgui.Text(u8"Админ чат.")
 		imgui.SameLine()
 		imgui.SetCursorPosX(imgui.GetWindowWidth() - 35)

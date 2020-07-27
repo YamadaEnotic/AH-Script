@@ -12,7 +12,7 @@ local imgui 							= require "imgui"
 local encoding							= require "encoding"
 local vkeys								= require "lib.vkeys"
 local inicfg							= require "inicfg"
-local notfy								= import 'lib_imgui_notf.lua'
+local notfy								= import 'lib/lib_imgui_notf.lua'
 --local pie								= require "imgui_piemenu"
 --local theme								= import "Module/imgui_themes.lua"
 encoding.default 						= "CP1251"
@@ -97,18 +97,27 @@ apply_custom_style()
 
 -- [x] -- Переменные. -- [x] --
 update_state = false
-local script_version = 2
-local script_version_text = "0.2"
+local script_version = 1
+local script_version_text = "1.0 relise"
 local update_url = "https://raw.githubusercontent.com/YamadaEnotic/AH-Script/master/update.ini"
 local update_path = getWorkingDirectory() .. '/update.ini'
 local script_url = "https://raw.githubusercontent.com/YamadaEnotic/AH-Script/master/AH_Bred.lua"
 local script_path = thisScript().path
 local tag = "{0777A3}[AH by Yamada.]: {CCCCCC}"
 local sw, sh = getScreenResolution()
-local index_text_pos = 1.9
 local directIni	= "AH_Setting\\config.ini"
 local font_ac
-local load_audio = loadAudioStream('moonloader/Module/audio/report_notification.mp3')
+local load_audio = loadAudioStream('moonloader/Module/audio/notification.mp3')
+local defTable = {
+	setting = {
+		Tranparency = false,
+		Fast_ans = false,
+		Punishments = false,
+		Index = 2.0,
+		Admin_chat = false,
+		Font = 10
+	}
+}
 local admin_chat_lines = {
 	chat_line_1 = " ",
 	chat_line_2 = " ",
@@ -385,7 +394,6 @@ local punishments = {
 		reason = "Убийство игроков на спавне."
 	}
 }
-
 local i_ans = {
 	u8'/givemoney ID Сумма.',
 	u8'/givescore ID Сумма (От Diamond VIP).',
@@ -429,7 +437,6 @@ local i_ans = {
 	u8'Чтобы попасть в банду: "/nab"',
 	u8'Используйте "/dt 1 - 990"'
 }
-
 local translate = {
 	["й"] = "q",
 	["ц"] = "w",
@@ -464,6 +471,16 @@ local translate = {
 	["б"] = ",",
 	["ю"] = "."
 }
+local download_aditional = {
+	lib = {
+		piemenu = "https://raw.githubusercontent.com/YamadaEnotic/AH-Script/master/imgui_piemenu.lua",
+		directory_piemenu = getWorkingDirectory() .. "lib/imgui_piemenu.lua",
+		imgui_addons = "https://raw.githubusercontent.com/YamadaEnotic/AH-Script/master/imgui_addons.lua",
+		directory_imgui_addons = getWorkingDirectory() .. "lib/imgui_addons.lua",
+		notification = "https://raw.githubusercontent.com/YamadaEnotic/AH-Script/master/lib_imgui_notf.lua",
+		directory_notification = getWorkingDirectory() .. "lib/lib_imgui_notf.lua"
+	}
+}
 
 -- [x] -- ImGUI переменные. -- [x] --
 local i_ans_window = imgui.ImBool(false)
@@ -483,7 +500,19 @@ function main()
 	if not isSampLoaded() or not isSampfuncsLoaded() then return end
 	while not isSampAvailable() do wait(0) end
 	
-	config = inicfg.load(nil, directIni)
+	sampRegisterChatCommand('ah_setting', function()
+		i_setting_items.v = not i_setting_items.v
+		imgui.Process = i_setting_items.v
+	end)
+	
+	if not doesDirectoryExist(getWorkingDirectory() .. "/config/AH_Setting") then
+		createDirectory(getWorkingDirectory() .. "/config/AH_Setting")
+	end
+	if not doesDirectoryExist(getWorkingDirectory() .. "/config/AH_Setting/audio") then
+		createDirectory(getWorkingDirectory() .. "/config/AH_Setting/audio")
+	end
+	
+	config = inicfg.load(defTable, directIni)
 	setting_items.Fast_ans.v = config.setting.Fast_ans
 	setting_items.Punishments.v = config.setting.Punishments
 	setting_items.Admin_chat.v = config.setting.Admin_chat
@@ -493,11 +522,6 @@ function main()
 	
 	admin_chat = lua_thread.create_suspended(drawAdminChat)
 	check_dialog_active = lua_thread.create_suspended(checkIsDialogActive)
-	
-	sampRegisterChatCommand('ah_setting', function()
-		i_setting_items.v = not i_setting_items.v
-		imgui.Process = i_setting_items.v
-	end)
 	
 	sampAddChatMessage(tag .. "Загрузка прошла успешно.")
 	
@@ -519,9 +543,12 @@ function main()
 	
 	-- [x] -- Беск. цикл. -- [x] --
 	while true do
-		if isKeyJustPressed(VK_END) then
+		if isKeyJustPressed(VK_END) and (sampIsChatInputActive() == false) and (sampIsDialogActive() == false) then
 			i_setting_items.v = not i_setting_items.v
 			imgui.Process = i_setting_items.v
+		end
+		if isKeyJustPressed(VK_X) and (sampIsChatInputActive() == false) and (sampIsDialogActive() == false) then
+			setting_items.Admin_chat.v = not setting_items.Admin_chat.v
 		end
 		if not i_setting_items.v and not i_ans_window.v then
 			imgui.Process = i_setting_items.v
@@ -583,6 +610,12 @@ function sampev.onShowDialog(dialogid, _, _, _, _, _)
 	--sampAddChatMessage(tag .. dialogid)
 	if dialogid == 2351 and setting_items.Fast_ans.v then
 		check_dialog_active:run(dialogid)
+		check_dialog = true
+	else
+		i_ans_window.v = false
+		imgui.Process = false
+		check_dialog = false
+		check_dialog_active:terminate()
 	end
 end
 function sampev.onDisplayGameText(_, _, text)
@@ -598,9 +631,10 @@ function checkIsDialogActive(dialogid)
 		else
 			i_ans_window.v = false
 			imgui.Process = false
+			check_dialog = false
 			break
 		end
-		wait(0)
+		wait(1)
 	end
 end
 function drawAdminChat()
@@ -945,10 +979,10 @@ function imgui.OnDrawFrame()
 		imgui.Begin(u8"Настройки скрипта.", i_setting_items)
 		imgui.Text(u8"Быстрые ответы на ANS.")
 		imgui.SameLine()
-		imgui.SetCursorPosX(imgui.GetWindowWidth() - 35)
+		--[[imgui.SetCursorPosX(imgui.GetWindowWidth() - 35)
 		imgui.ToggleButton("##1", setting_items.Fast_ans)
 		imgui.Text(u8"Сокращенные команды наказаний.")
-		imgui.SameLine()
+		imgui.SameLine()]]
 		imgui.SetCursorPosX(imgui.GetWindowWidth() - 35)
 		imgui.ToggleButton("##3", setting_items.Punishments)
 		imgui.Text(u8"Админ чат.")

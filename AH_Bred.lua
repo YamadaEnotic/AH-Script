@@ -97,8 +97,8 @@ apply_custom_style()
 
 -- [x] -- Переменные. -- [x] --
 update_state = false
-local script_version = 1
-local script_version_text = "1.0 relise"
+local script_version = 2
+local script_version_text = "1.1 bug-fix"
 local update_url = "https://raw.githubusercontent.com/YamadaEnotic/AH-Script/master/update.ini"
 local update_path = getWorkingDirectory() .. '/update.ini'
 local script_url = "https://raw.githubusercontent.com/YamadaEnotic/AH-Script/master/AH_Bred.lua"
@@ -342,6 +342,16 @@ local punishments = {
 		time = 400,
 		reason = "Оскорбление администрации в /report."
 	},
+	["otop"] = {
+		cmd = "rmute",
+		time = 120,
+		reason = "/report не по назначению. (Offtop)"
+	},
+	["щещз"] = {
+		cmd = "rmute",
+		time = 120,
+		reason = "/report не по назначению. (Offtop)"
+	},
 	-- [x] -- Джайлы -- [x] --
 	["sh"] = {
 		cmd = "jail",
@@ -481,11 +491,258 @@ local download_aditional = {
 		directory_notification = getWorkingDirectory() .. "lib/lib_imgui_notf.lua"
 	}
 }
+local onscene = {
+	"6ля", "6лядь", "6лять", "b3ъeб", "cock", "cunt",
+	"e6aль", "ebal", "eblan", "eбaл", "eбaть", "eбyч",
+	"eбать", "eбёт", "eблантий", "fuck", "fucker",
+	"fucking", "xyёв", "xyй", "xyя", "xуе", "xуй", "xую",
+	"zaeb", "zaebal", "zaebali", "zaebat", "архипиздрит",
+	"ахуел", "ахуеть", "бздение", "бздеть", "бздех", "бздецы",
+	"бздит", "бздицы", "бздло", "бзднуть", "бздун", "бздунья",
+	"бздюха", "бздюшка", "бздюшко", "бля", "блябу", "блябуду",
+	"бляд", "бляди", "блядина", "блядище", "блядки",
+	"блядовать", "блядство", "блядун", "блядуны",
+	"блядунья", "блядь", "блядюга", "блять", "вафел",
+	"вафлёр", "взъебка", "взьебка", "взьебывать",
+	"въеб", "въебался", "въебенн", "въебусь",
+	"въебывать", "выблядок", "выблядыш", "выеб",
+	"выебать", "выебен", "выебнулся", "выебон",
+	"выебываться", "выпердеть", "высраться",
+	"выссаться", "вьебен", "гавно", "гавнюк",
+	"гавнючка", "гамно", "гандон", "гнид", "гнида",
+	"гниды", "говенка", "говенный", "говешка",
+	"говназия", "говнецо", "говнище", "говно",
+	"говноед", "говнолинк", "говночист", "говнюк",
+	"говнюха", "говнядина", "говняк", "говняный",
+	"говнять", "гондон", "доебываться", "долбоеб",
+	"долбоёб", "долбоящер", "дрисня", "дрист",
+	"дристануть", "дристать", "дристун", "дристуха",
+	"дрочелло", "дрочена", "дрочила", "дрочилка", "дрочистый",
+	"дрочить", "дрочка", "дрочун", "е6ал", "е6ут", "ёбaн", 
+	"ебaть", "ебyч", "ебал", "ебало",
+	"ебальник", "ебан", "ебанамать", "ебанат", "ебаная",
+	"ёбаная", "ебанический", "ебанный", "ебанныйврот", "ебаное",
+	"ебануть", "ебануться", "ёбаную", "ебаный", "ебанько",
+	"ебарь", "ебат", "ёбат", "ебатория", "ебать", "ебать-копать",
+	"ебаться", "ебашить", "ебёна", "ебет", "ебёт", "ебец", "ебик",
+	"ебин", "ебись", "ебическая", "ебки", "ебла", "еблан", "ебливый",
+	"еблище", "ебло", "еблыст", "ебля", "ёбн", "ебнуть", "ебнуться",
+	"ебня", "ебошить", "ебская", "ебский", "ебтвоюмать", "ебун",
+	"ебут", "ебуч", "ебуче", "ебучее", "ебучий", "ебучим", "ебущ",
+	"ебырь", "елда", "елдак", "елдачить", "жопа", "жопу", "заговнять",
+	"задрачивать", "задристать", "задрота", "зае6", "заё6",
+	"заеб", "заёб", "заеба", "заебал", "заебанец", "заебастая",
+	"заебастый", "заебать", "заебаться", "заебашить",
+	"заебистое", "заёбистое", "заебистые", "заёбистые",
+	"заебистый", "заёбистый", "заебись", "заебошить",
+	"заебываться", "залуп", "залупа", "залупаться",
+	"залупить", "залупиться", "замудохаться",
+	"запиздячить", "засерать", "засерун", "засеря",
+	"засирать", "засрун", "захуячить", "заябестая",
+	"злоеб", "злоебучая", "злоебучее", "злоебучий",
+	"ибанамат", "ибонех", "изговнять", "изговняться",
+	"изъебнуться", "ипать", "ипаться", "ипаццо",
+	"Какдвапальцаобоссать", "конча", "курва",
+	"курвятник", "лох", "лошарa", "лошара",
+	"лошары", "лошок", "лярва", "малафья", "манда",
+	"мандавошек", "мандавошка", "мандавошки",
+	"мандей", "мандень", "мандеть", "мандища",
+	"мандой", "манду", "мандюк", "минет", "минетчик",
+	"минетчица", "млять", "мокрощелка", "мокрощёлка",
+	"мразь", "мудak", "мудaк", "мудаг", "мудак", "муде",
+	"мудель", "мудеть", "муди", "мудил", "мудила", "мудистый",
+	"мудня", "мудоеб", "мудозвон", "мудоклюй", "на хер",
+	"на хуй", "набздел", "набздеть", "наговнять", "надристать",
+	"надрочить", "наебать", "наебет", "наебнуть", "наебнуться",
+	"наебывать", "напиздел", "напиздели", "напиздело",
+	"напиздили", "насрать", "настопиздить", "нахер", "нахрен",
+	"нахуй", "нахуйник", "не ебет", "не ебёт", "невротебучий",
+	"невъебенно", "нехира", "нехрен", "Нехуй", "нехуйственно",
+	"ниибацо", "ниипацца", "ниипаццо", "ниипет", "никуя",
+	"нихера", "нихуя", "обдристаться", "обосранец", "обосрать",
+	"обосцать", "обосцаться", "обсирать", "объебос", "обьебать",
+	"обьебос", "однохуйственно", "опездал", "опизде",
+	"опизденивающе", "остоебенить", "остопиздеть",
+	"отмудохать", "отпиздить", "отпиздячить", "отпороть",
+	"отъебись", "охуевательский", "охуевать", "охуевающий",
+	"охуел", "охуенно", "охуеньчик", "охуеть", "охуительно",
+	"охуительный", "охуяньчик", "охуячивать", "охуячить",
+	"очкун", "падла", "падонки", "падонок", "паскуда", "педерас",
+	"педик", "педрик", "педрила", "педрилло", "педрило",
+	"педрилы", "пездень", "пездит", "пездишь", "пездо", "пездят",
+	"пердануть", "пердеж", "пердение", "пердеть", "пердильник",
+	"перднуть", "пёрднуть", "пердун", "пердунец", "пердунина",
+	"пердунья", "пердуха", "пердь", "переёбок", "пернуть",
+	"пёрнуть", "пи3д", "пи3де", "пи3ду", "пиzдец", "пидар", "пидарaс",
+	"пидарас", "пидарасы", "пидары", "пидор", "пидорасы", "пидорка",
+	"пидорок", "пидоры", "пидрас", "пизда", "пиздануть", "пиздануться",
+	"пиздарваньчик", "пиздато", "пиздатое", "пиздатый", "пизденка",
+	"пизденыш", "пиздёныш", "пиздеть", "пиздец", "пиздит", "пиздить",
+	"пиздиться", "пиздишь", "пиздища", "пиздище", "пиздобол",
+	"пиздоболы", "пиздобратия", "пиздоватая", "пиздоватый",
+	"пиздолиз", "пиздонутые", "пиздорванец", "пиздорванка",
+	"пиздострадатель", "пизду", "пиздуй", "пиздун", "пиздунья",
+	"пизды", "пиздюга", "пиздюк", "пиздюлина", "пиздюля", "пиздят",
+	"пиздячить", "писбшки", "писька", "писькострадатель",
+	"писюн", "писюшка", "по хуй", "по хую", "подговнять",
+	"подонки", "подонок", "подъебнуть", "подъебнуться",
+	"поебать", "поебень", "поёбываает", "поскуда", "посрать",
+	"потаскуха", "потаскушка", "похер", "похерил", "похерила",
+	"похерили", "похеру", "похрен", "похрену", "похуй", "похуист",
+	"похуистка", "похую", "придурок", "приебаться", "припиздень",
+	"припизднутый", "припиздюлина", "пробзделся", "проблядь",
+	"проеб", "проебанка", "проебать", "промандеть", "промудеть",
+	"пропизделся", "пропиздеть", "пропиздячить", "раздолбай",
+	"разхуячить", "разъеб", "разъеба", "разъебай", "разъебать",
+	"распиздай", "распиздеться", "распиздяй", "распиздяйство",
+	"распроеть", "сволота", "сволочь", "сговнять", "секель", "серун",
+	"серька", "сестроеб", "сикель", "сила", "сирать", "сирывать", "соси",
+	"спиздел", "спиздеть", "спиздил", "спиздила", "спиздили", "спиздит",
+	"спиздить", "срака", "сраку", "сраный", "сранье", "срать", "срун", "ссака",
+	"ссышь", "стерва", "страхопиздище", "сука", "суки", "суходрочка", "сучара",
+	"сучий", "сучка", "сучко", "сучонок", "сучье", "сцание", "сцать", "сцука", "сцуки",
+	"сцуконах", "сцуль", "сцыха", "сцышь", "съебаться", "сыкун", "трахае6", "трахаеб",
+	"трахаёб", "трахатель", "ублюдок", "уебать", "уёбища", "уебище", "уёбище",
+	"уебищное", "уёбищное", "уебк", "уебки", "уёбки", "уебок", "уёбок", "урюк",
+	"усраться", "ушлепок", "х_у_я_р_а", "хyё", "хyй", "хyйня", "хамло", "хер",
+	"херня", "херовато", "херовина", "херовый", "хитровыебанный", "хитрожопый",
+	"хуeм", "хуе", "хуё", "хуевато", "хуёвенький", "хуевина", "хуево", "хуевый", "хуёвый",
+	"хуек", "хуёк", "хуел", "хуем", "хуенч", "хуеныш", "хуенький", "хуеплет", "хуеплёт",
+	"хуепромышленник", "хуерик", "хуерыло", "хуесос", "хуесоска", "хуета", "хуетень",
+	"хуею", "хуи", "хуй", "хуйком", "хуйло", "хуйня", "хуйрик", "хуище", "хуля", "хую", "хуюл",
+	"хуя", "хуяк", "хуякать", "хуякнуть", "хуяра", "хуясе", "хуячить", "целка", "чмо",
+	"чмошник", "чмырь", "шалава", "шалавой", "шараёбиться", "шлюха", "шлюхой", "шлюшка", "мать", "мама",
+	"матери"
+}
+local log_onscene = {
+	["player_1"] = {
+		id = nil,
+		name = " ",
+		text = " ",
+		suspicion = " "
+	},
+	["player_2"] = {
+		id = nil,
+		name = " ",
+		text = " ",
+		suspicion = " "
+	},
+	["player_3"] = {
+		id = nil,
+		name = " ",
+		text = " ",
+		suspicion = " "
+	},
+	["player_4"] = {
+		id = nil,
+		name = " ",
+		text = " ",
+		suspicion = " "
+	},
+	["player_5"] = {
+		id = nil,
+		name = " ",
+		text = " ",
+		suspicion = " "
+	},
+	["player_6"] = {
+		id = nil,
+		name = " ",
+		text = " ",
+		suspicion = " "
+	},
+	["player_7"] = {
+		id = nil,
+		name = " ",
+		text = " ",
+		suspicion = " "
+	},
+	["player_8"] = {
+		id = nil,
+		name = " ",
+		text = " ",
+		suspicion = " "
+	},
+	["player_9"] = {
+		id = nil,
+		name = " ",
+		text = " ",
+		suspicion = " "
+	},
+	["player_10"] = {
+		id = nil,
+		name = " ",
+		text = " ",
+		suspicion = " "
+	},
+	["player_11"] = {
+		id = nil,
+		name = " ",
+		text = " ",
+		suspicion = " "
+	},
+	["player_12"] = {
+		id = nil,
+		name = " ",
+		text = " ",
+		suspicion = " "
+	},
+	["player_13"] = {
+		id = nil,
+		name = " ",
+		text = " ",
+		suspicion = " "
+	},
+	["player_14"] = {
+		id = nil,
+		name = " ",
+		text = " ",
+		suspicion = " "
+	},
+	["player_15"] = {
+		id = nil,
+		name = " ",
+		text = " ",
+		suspicion = " "
+	},
+	["player_16"] = {
+		id = nil,
+		name = " ",
+		text = " ",
+		suspicion = " "
+	},
+	["player_17"] = {
+		id = nil,
+		name = " ",
+		text = " ",
+		suspicion = " "
+	},
+	["player_18"] = {
+		id = nil,
+		name = " ",
+		text = " ",
+		suspicion = " "
+	},
+	["player_19"] = {
+		id = nil,
+		name = " ",
+		text = " ",
+		suspicion = " "
+	},
+	["player_20"] = {
+		id = nil,
+		name = " ",
+		text = " ",
+		suspicion = " "
+	}
+}
+local date_onscene = {}
 
 -- [x] -- ImGUI переменные. -- [x] --
 local i_ans_window = imgui.ImBool(false)
 local i_setting_items = imgui.ImBool(false)
 local i_back_prefix = imgui.ImBool(false)
+local i_log_onscene = imgui.ImBool(false)
 local font_size_ac = imgui.ImBuffer(16)
 local setting_items = {
 	Fast_ans = imgui.ImBool(false),
@@ -550,11 +807,19 @@ function main()
 		if isKeyJustPressed(VK_X) and (sampIsChatInputActive() == false) and (sampIsDialogActive() == false) then
 			setting_items.Admin_chat.v = not setting_items.Admin_chat.v
 		end
-		if not i_setting_items.v and not i_ans_window.v then
-			imgui.Process = i_setting_items.v
+		if not i_setting_items.v and not i_ans_window.v and not i_log_onscene.v then
+			imgui.Process = false
 		end
-		local result, button, list, input = sampHasDialogRespond(10)
-		if result then sampAddChatMessage(tag .. "Произведено действие с диалогом.") end
+		if sampGetCurrentDialogId() == 2351 and setting_items.Fast_ans.v and sampIsDialogActive() then
+			i_ans_window.v = true
+			imgui.Process = true
+		else 
+			i_ans_window.v = false
+		end
+		if --[[isKeyDown(VK_MENU) and ]]isKeyJustPressed(VK_B) and (sampIsChatInputActive() == false) and (sampIsDialogActive() == false) then
+			i_log_onscene.v = not i_log_onscene.v
+			imgui.Process = i_log_onscene.v
+		end
 		wait(0)
 	end
 end
@@ -571,6 +836,7 @@ function sampev.onSendChat(message)
 end
 function sampev.onServerMessage(color, text)
 	local check_string = string.match(text, "[^%s]+")
+	local _, check_mat_id, check_mat = string.match(text, "(.+)%((.+)%): (.+)")
 	if setting_items.Admin_chat.v and (check_string == '[A-1]' 
 	or check_string == '[A-2]' 
 	or check_string == '[A-3]' 
@@ -605,36 +871,35 @@ function sampev.onServerMessage(color, text)
 		showNotification("Уведомление", "Поступил новый репорт.")
 		return true
 	end
+	if check_mat ~= nil and check_mat_id ~= nil then
+		for key, value in pairs(onscene) do
+			if string.find(check_mat, value) ~= nil then
+				local number_log_player
+				for i = 1, 20, 1 do
+					if log_onscene["player_" .. i].id == nil then
+						number_log_player = i
+					end
+				end
+				sampAddChatMessage(tag .. " Number: " .. number_log_player .. " Value: "  .. value)
+				log_onscene["player_" .. number_log_player].id = tonumber(check_mat_id)
+				log_onscene["player_" .. number_log_player].name = sampGetPlayerNickname(tonumber(check_mat_id))
+				log_onscene["player_" .. number_log_player].text = check_mat
+				log_onscene["player_" .. number_log_player].suspicion = value
+				date_onscene[number_log_player] = os.date()
+				showNotification("Детектор!", "Детектор обнаружил нарушение! \nЗапрещенное слово: {FF0000}" .. value .. "\n{FFFFFF}Ник нарушителя: {FF0000}" .. sampGetPlayerNickname(tonumber(check_mat_id)))
+				break
+			end
+		end
+		return true
+	end
+
 end
 function sampev.onShowDialog(dialogid, _, _, _, _, _)
 	--sampAddChatMessage(tag .. dialogid)
-	if dialogid == 2351 and setting_items.Fast_ans.v then
-		check_dialog_active:run(dialogid)
-		check_dialog = true
-	else
-		i_ans_window.v = false
-		imgui.Process = false
-		check_dialog = false
-		check_dialog_active:terminate()
-	end
 end
 function sampev.onDisplayGameText(_, _, text)
 	if text == "~y~REPORT++" then
 		return false
-	end
-end
-function checkIsDialogActive(dialogid)
-	while true do
-		if sampIsDialogActive() then
-			i_ans_window.v = true
-			imgui.Process = true
-		else
-			i_ans_window.v = false
-			imgui.Process = false
-			check_dialog = false
-			break
-		end
-		wait(1)
 	end
 end
 function drawAdminChat()
@@ -671,6 +936,26 @@ function showNotification(handle, text_not)
 	notfy.addNotify("{6930A1}" .. handle, " \n " .. text_not .. " \n", 2, 1, 10)
 	setAudioStreamState(load_audio, ev.PLAY)
 end
+function controlOnscene()
+	local number_log_player
+	for i = 1, 20, 1 do
+		number_log_player = i
+		if log_onscene["player_" .. number_log_player].id == nil
+		then
+			
+			log_onscene["player_" .. number_log_player].id = log_onscene["player_" .. number_log_player+1].id
+			log_onscene["player_" .. number_log_player+1].id = nil
+			log_onscene["player_" .. number_log_player].name = log_onscene["player_" .. number_log_player+1].name
+			log_onscene["player_" .. number_log_player+1].name = " "
+			log_onscene["player_" .. number_log_player].text = log_onscene["player_" .. number_log_player+1].text
+			log_onscene["player_" .. number_log_player+1].text = " "
+			log_onscene["player_" .. number_log_player].suspicion = log_onscene["player_" .. number_log_player+1].suspicion
+			log_onscene["player_" .. number_log_player+1].suspicion = " "
+			date_onscene[i] = date_onscene[number_log_playe+1]
+			date_onscene[i] = " "
+		end
+	end
+end
 
 -- [x] -- ImGUI тело. -- [x] --
 local W_Windows = sw/1.145
@@ -679,7 +964,7 @@ local text_dialog
 function imgui.OnDrawFrame()
 	if i_ans_window.v then
 		imgui.SetNextWindowPos(imgui.ImVec2(W_Windows, H_Windows), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
-		imgui.SetNextWindowSize(imgui.ImVec2(300, 500), imgui.Cond.FirstUseEver)
+		imgui.SetNextWindowSize(imgui.ImVec2(280, 700), imgui.Cond.FirstUseEver)
 		imgui.Begin(u8"Ответы на ANS", i_ans_window)
 		local btn_size = imgui.ImVec2(-0.1, 0)
 		imgui.Checkbox(u8"Пожелание в конце.", i_back_prefix)
@@ -1036,6 +1321,833 @@ function imgui.OnDrawFrame()
 			imgui.Separator()
 			imgui.Text(u8"Версия скрипта: " .. script_version_text)
 		end
+		imgui.End()
+	end
+	if i_log_onscene.v then
+		imgui.SetNextWindowPos(imgui.ImVec2(10, 10), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
+		imgui.SetNextWindowSize(imgui.ImVec2(sw - 10, 400), imgui.Cond.FirstUseEver)
+		imgui.Begin(u8"Наказания за нарушение в чате.", i_log_onscene)
+		imgui.Text(u8"Ниже представлены игроки, которые нарушили правила чата.")
+		if log_onscene["player_1"].id ~= nil then
+			imgui.Separator()
+			imgui.Text(u8"Ник игрока: " .. u8:encode(log_onscene["player_1"].name) .. " ID: " .. u8:encode(log_onscene["player_1"].id) .. 
+			u8"\nСлово, которое попало под подозрения: " .. u8:encode(log_onscene["player_1"].suspicion) .. 
+			u8"\nТекст из чата: " .. u8:encode(log_onscene["player_1"].text) .. 
+			u8"\nДата: " .. date_onscene[1] ..
+			u8"\nНаказание:")
+			if imgui.Button(u8"Мат. ##1", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_1"].id .. " 300 Нецензурная лексика.")
+				log_onscene["player_1"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. ##1", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_1"].id .. " 400 Оскорбление игрока.")
+				log_onscene["player_1"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Униж. ##1", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_1"].id .. " 400 Унижение игрока игрока.")
+				log_onscene["player_1"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. Род. ##1", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_1"].id .. " 5000 Упоминание родителей.")
+				log_onscene["player_1"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. Адм. ##1", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_1"].id .. " 2500 Оскорбление администрации.")
+				log_onscene["player_1"].id = nil
+				controlOnscene()
+			end 
+			if imgui.Button(u8"Очистить. ##1", imgui.ImVec2(90, 0)) then
+				log_onscene["player_1"].id = nil
+				controlOnscene()
+			end 
+		end
+		if log_onscene["player_2"].id ~= nil then
+			imgui.Separator()
+			imgui.Text(u8"Ник игрока: " .. u8:encode(log_onscene["player_2"].name) .. " ID: " .. u8:encode(log_onscene["player_2"].id) .. 
+			u8"\nСлово, которое попало под подозрения: " .. u8:encode(log_onscene["player_2"].suspicion) .. 
+			u8"\nТекст из чата: " .. u8:encode(log_onscene["player_2"].text) .. 
+			u8"\nДата: " .. date_onscene[2] ..
+			u8"\nНаказание:")
+			if imgui.Button(u8"Мат. ##2", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_2"].id .. " 300 Нецензурная лексика.")
+				log_onscene["player_2"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. ##2", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_2"].id .. " 400 Оскорбление игрока.")
+				log_onscene["player_2"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Униж. ##2", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_2"].id .. " 400 Унижение игрока игрока.")
+				log_onscene["player_2"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. Род. ##2", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_2"].id .. " 5000 Упоминание родителей.")
+				log_onscene["player_2"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. Адм. ##2", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_2"].id .. " 2500 Оскорбление администрации.")
+				log_onscene["player_2"].id = nil
+				controlOnscene()
+			end 
+			if imgui.Button(u8"Очистить. ##2", imgui.ImVec2(90, 0)) then
+				log_onscene["player_2"].id = nil
+				controlOnscene()
+			end 
+		end
+		if log_onscene["player_3"].id ~= nil then
+			imgui.Separator()
+			imgui.Text(u8"Ник игрока: " .. u8:encode(log_onscene["player_3"].name) .. " ID: " .. u8:encode(log_onscene["player_3"].id) .. 
+			u8"\nСлово, которое попало под подозрения: " .. u8:encode(log_onscene["player_3"].suspicion) .. 
+			u8"\nТекст из чата: " .. u8:encode(log_onscene["player_3"].text) .. 
+			u8"\nДата: " .. date_onscene[3] ..
+			u8"\nНаказание:")
+			if imgui.Button(u8"Мат. ##3", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_3"].id .. " 300 Нецензурная лексика.")
+				log_onscene["player_3"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. ##3", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_3"].id .. " 400 Оскорбление игрока.")
+				log_onscene["player_3"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Униж. ##3", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_3"].id .. " 400 Унижение игрока игрока.")
+				log_onscene["player_3"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. Род. ##3", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_3"].id .. " 5000 Упоминание родителей.")
+				log_onscene["player_3"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. Адм. ##3", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_3"].id .. " 2500 Оскорбление администрации.")
+				log_onscene["player_3"].id = nil
+				controlOnscene()
+			end 
+			if imgui.Button(u8"Очистить. ##3", imgui.ImVec2(90, 0)) then
+				log_onscene["player_3"].id = nil
+				controlOnscene()
+			end 	
+		end
+		if log_onscene["player_4"].id ~= nil then
+			imgui.Separator()
+			imgui.Text(u8"Ник игрока: " .. u8:encode(log_onscene["player_4"].name) .. " ID: " .. u8:encode(log_onscene["player_4"].id) .. 
+			u8"\nСлово, которое попало под подозрения: " .. u8:encode(log_onscene["player_4"].suspicion) .. 
+			u8"\nТекст из чата: " .. u8:encode(log_onscene["player_4"].text) .. 
+			u8"\nДата: " .. date_onscene[4] ..
+			u8"\nНаказание:")
+			if imgui.Button(u8"Мат. ##4", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_4"].id .. " 300 Нецензурная лексика.")
+				log_onscene["player_4"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. ##4", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_4"].id .. " 400 Оскорбление игрока.")
+				log_onscene["player_4"].id = nil
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Униж. ##4", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_4"].id .. " 400 Унижение игрока игрока.")
+				log_onscene["player_4"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. Род. ##4", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_4"].id .. " 5000 Упоминание родителей.")
+				log_onscene["player_4"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. Адм. ##4", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_4"].id .. " 2500 Оскорбление администрации.")
+				log_onscene["player_4"].id = nil
+				controlOnscene()
+			end 	
+			if imgui.Button(u8"Очистить. ##4", imgui.ImVec2(90, 0)) then
+				log_onscene["player_4"].id = nil
+				controlOnscene()
+			end 	
+		end
+		if log_onscene["player_5"].id ~= nil then
+			imgui.Separator()
+			imgui.Text(u8"Ник игрока: " .. u8:encode(log_onscene["player_5"].name) .. " ID: " .. u8:encode(log_onscene["player_5"].id) .. 
+			u8"\nСлово, которое попало под подозрения: " .. u8:encode(log_onscene["player_5"].suspicion) .. 
+			u8"\nТекст из чата: " .. u8:encode(log_onscene["player_5"].text) .. 
+			u8"\nДата: " .. date_onscene[5] ..
+			u8"\nНаказание:")
+			if imgui.Button(u8"Мат. ##5", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_5"].id .. " 300 Нецензурная лексика.")
+				log_onscene["player_5"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. ##5", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_5"].id .. " 400 Оскорбление игрока.")
+				log_onscene["player_5"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Униж. ##5", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_5"].id .. " 400 Унижение игрока игрока.")
+				log_onscene["player_5"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. Род. ##5", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_5"].id .. " 5000 Упоминание родителей.")
+				log_onscene["player_5"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. Адм. ##5", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_5"].id .. " 2500 Оскорбление администрации.")
+				log_onscene["player_5"].id = nil
+				controlOnscene()
+			end 	
+			if imgui.Button(u8"Очистить. ##5", imgui.ImVec2(90, 0)) then
+				log_onscene["player_5"].id = nil
+				controlOnscene()
+			end 	
+		end
+		if log_onscene["player_6"].id ~= nil then
+			imgui.Separator()
+			imgui.Text(u8"Ник игрока: " .. u8:encode(log_onscene["player_6"].name) .. " ID: " .. u8:encode(log_onscene["player_6"].id) .. 
+			u8"\nСлово, которое попало под подозрения: " .. u8:encode(log_onscene["player_6"].suspicion) .. 
+			u8"\nТекст из чата: " .. u8:encode(log_onscene["player_6"].text) .. 
+			u8"\nДата: " .. date_onscene[6] ..
+			u8"\nНаказание:")
+			if imgui.Button(u8"Мат. ##6", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_6"].id .. " 300 Нецензурная лексика.")
+				log_onscene["player_6"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. ##6", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_6"].id .. " 400 Оскорбление игрока.")
+				log_onscene["player_6"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Униж. ##6", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_6"].id .. " 400 Унижение игрока игрока.")
+				log_onscene["player_6"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. Род. ##6", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_6"].id .. " 5000 Упоминание родителей.")
+				log_onscene["player_6"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. Адм. ##6", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_6"].id .. " 2500 Оскорбление администрации.")
+				log_onscene["player_6"].id = nil
+				controlOnscene()
+			end 	
+			if imgui.Button(u8"Очистить. ##6", imgui.ImVec2(90, 0)) then
+				log_onscene["player_6"].id = nil
+				controlOnscene()
+			end 	
+		end
+		if log_onscene["player_7"].id ~= nil then
+			imgui.Separator()
+			imgui.Text(u8"Ник игрока: " .. u8:encode(log_onscene["player_7"].name) .. " ID: " .. u8:encode(log_onscene["player_7"].id) .. 
+			u8"\nСлово, которое попало под подозрения: " .. u8:encode(log_onscene["player_7"].suspicion) .. 
+			u8"\nТекст из чата: " .. u8:encode(log_onscene["player_7"].text) .. 
+			u8"\nДата: " .. date_onscene[7] ..
+			u8"\nНаказание:")
+			if imgui.Button(u8"Мат. ##7", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_7"].id .. " 300 Нецензурная лексика.")
+				log_onscene["player_7"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. ##7", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_7"].id .. " 400 Оскорбление игрока.")
+				log_onscene["player_7"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Униж. ##7", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_7"].id .. " 400 Унижение игрока игрока.")
+				log_onscene["player_7"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. Род. ##7", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_7"].id .. " 5000 Упоминание родителей.")
+				log_onscene["player_7"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. Адм. ##7", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_7"].id .. " 2500 Оскорбление администрации.")
+				log_onscene["player_7"].id = nil
+				controlOnscene()
+			end 	
+			if imgui.Button(u8"Очистить. ##7", imgui.ImVec2(90, 0)) then
+				log_onscene["player_7"].id = nil
+				controlOnscene()
+			end 	
+		end
+		if log_onscene["player_8"].id ~= nil then
+			imgui.Separator()
+			imgui.Text(u8"Ник игрока: " .. u8:encode(log_onscene["player_8"].name) .. " ID: " .. u8:encode(log_onscene["player_8"].id) .. 
+			u8"\nСлово, которое попало под подозрения: " .. u8:encode(log_onscene["player_8"].suspicion) .. 
+			u8"\nТекст из чата: " .. u8:encode(log_onscene["player_8"].text) .. 
+			u8"\nДата: " .. date_onscene[8] ..
+			u8"\nНаказание:")
+			if imgui.Button(u8"Мат. ##8", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_8"].id .. " 300 Нецензурная лексика.")
+				log_onscene["player_8"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. ##8", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_8"].id .. " 400 Оскорбление игрока.")
+				log_onscene["player_8"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Униж. ##8", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_8"].id .. " 400 Унижение игрока игрока.")
+				log_onscene["player_8"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. Род. ##8", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_8"].id .. " 5000 Упоминание родителей.")
+				log_onscene["player_8"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. Адм. ##8", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_8"].id .. " 2500 Оскорбление администрации.")
+				log_onscene["player_8"].id = nil
+				controlOnscene()
+			end 	
+			if imgui.Button(u8"Очистить. ##8", imgui.ImVec2(90, 0)) then
+				log_onscene["player_8"].id = nil
+				controlOnscene()
+			end 	
+		end
+		if log_onscene["player_9"].id ~= nil then
+			imgui.Separator()
+			imgui.Text(u8"Ник игрока: " .. u8:encode(log_onscene["player_9"].name) .. " ID: " .. u8:encode(log_onscene["player_9"].id) .. 
+			u8"\nСлово, которое попало под подозрения: " .. u8:encode(log_onscene["player_9"].suspicion) .. 
+			u8"\nТекст из чата: " .. u8:encode(log_onscene["player_9"].text) .. 
+			u8"\nДата: " .. date_onscene[9] ..
+			u8"\nНаказание:")
+			if imgui.Button(u8"Мат. ##9", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_9"].id .. " 300 Нецензурная лексика.")
+				log_onscene["player_9"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. ##9", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_9"].id .. " 400 Оскорбление игрока.")
+				log_onscene["player_9"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Униж. ##9", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_9"].id .. " 400 Унижение игрока игрока.")
+				log_onscene["player_9"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. Род. ##9", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_9"].id .. " 5000 Упоминание родителей.")
+				log_onscene["player_9"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. Адм. ##9", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_9"].id .. " 2500 Оскорбление администрации.")
+				log_onscene["player_9"].id = nil
+				controlOnscene()
+			end 	
+			if imgui.Button(u8"Очистить. ##9", imgui.ImVec2(90, 0)) then
+				log_onscene["player_9"].id = nil
+				controlOnscene()
+			end 	
+		end
+		if log_onscene["player_10"].id ~= nil then
+			imgui.Separator()
+			imgui.Text(u8"Ник игрока: " .. u8:encode(log_onscene["player_10"].name) .. " ID: " .. u8:encode(log_onscene["player_10"].id) .. 
+			u8"\nСлово, которое попало под подозрения: " .. u8:encode(log_onscene["player_10"].suspicion) .. 
+			u8"\nТекст из чата: " .. u8:encode(log_onscene["player_10"].text) .. 
+			u8"\nДата: " .. date_onscene[10] ..
+			u8"\nНаказание:")
+			if imgui.Button(u8"Мат. ##10", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_10"].id .. " 300 Нецензурная лексика.")
+				log_onscene["player_10"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. ##10", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_10"].id .. " 400 Оскорбление игрока.")
+				log_onscene["player_10"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Униж. ##10", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_10"].id .. " 400 Унижение игрока игрока.")
+				log_onscene["player_10"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. Род. ##10", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_10"].id .. " 5000 Упоминание родителей.")
+				log_onscene["player_10"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. Адм. ##10", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_10"].id .. " 2500 Оскорбление администрации.")
+				log_onscene["player_10"].id = nil
+				controlOnscene()
+			end 	
+			if imgui.Button(u8"Очистить. ##10", imgui.ImVec2(90, 0)) then
+				log_onscene["player_10"].id = nil
+				controlOnscene()
+			end 	
+		end
+		if log_onscene["player_11"].id ~= nil then
+			imgui.Separator()
+			imgui.Text(u8"Ник игрока: " .. u8:encode(log_onscene["player_11"].name) .. " ID: " .. u8:encode(log_onscene["player_11"].id) .. 
+			u8"\nСлово, которое попало под подозрения: " .. u8:encode(log_onscene["player_11"].suspicion) .. 
+			u8"\nТекст из чата: " .. u8:encode(log_onscene["player_11"].text) .. 
+			u8"\nДата: " .. date_onscene[11] ..
+			u8"\nНаказание:")
+			if imgui.Button(u8"Мат. ##11", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_11"].id .. " 300 Нецензурная лексика.")
+				log_onscene["player_11"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. ##11", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_11"].id .. " 400 Оскорбление игрока.")
+				log_onscene["player_11"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Униж. ##11", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_11"].id .. " 400 Унижение игрока игрока.")
+				log_onscene["player_11"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. Род. ##11", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_11"].id .. " 5000 Упоминание родителей.")
+				log_onscene["player_11"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. Адм. ##11", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_11"].id .. " 2500 Оскорбление администрации.")
+				log_onscene["player_11"].id = nil
+				controlOnscene()
+			end 	
+			if imgui.Button(u8"Очистить. ##11", imgui.ImVec2(90, 0)) then
+				log_onscene["player_11"].id = nil
+				controlOnscene()
+			end 	
+		end
+		if log_onscene["player_12"].id ~= nil then
+			imgui.Separator()
+			imgui.Text(u8"Ник игрока: " .. u8:encode(log_onscene["player_12"].name) .. " ID: " .. u8:encode(log_onscene["player_12"].id) .. 
+			u8"\nСлово, которое попало под подозрения: " .. u8:encode(log_onscene["player_12"].suspicion) .. 
+			u8"\nТекст из чата: " .. u8:encode(log_onscene["player_12"].text) ..
+			u8"\nДата: " .. date_onscene[12] .. 
+			u8"\nНаказание:")
+			if imgui.Button(u8"Мат. ##12", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_12"].id .. " 300 Нецензурная лексика.")
+				log_onscene["player_12"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. ##12", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_12"].id .. " 400 Оскорбление игрока.")
+				log_onscene["player_12"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Униж. ##12", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_12"].id .. " 400 Унижение игрока игрока.")
+				log_onscene["player_12"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. Род. ##12", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_12"].id .. " 5000 Упоминание родителей.")
+				log_onscene["player_12"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. Адм. ##12", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_12"].id .. " 2500 Оскорбление администрации.")
+				log_onscene["player_12"].id = nil
+				controlOnscene()
+			end 	
+			if imgui.Button(u8"Очистить. ##12", imgui.ImVec2(90, 0)) then
+				log_onscene["player_12"].id = nil
+				controlOnscene()
+			end 	
+		end
+		if log_onscene["player_13"].id ~= nil then
+			imgui.Separator()
+			imgui.Text(u8"Ник игрока: " .. u8:encode(log_onscene["player_13"].name) .. " ID: " .. u8:encode(log_onscene["player_13"].id) .. 
+			u8"\nСлово, которое попало под подозрения: " .. u8:encode(log_onscene["player_13"].suspicion) .. 
+			u8"\nТекст из чата: " .. u8:encode(log_onscene["player_13"].text) .. 
+			u8"\nДата: " .. date_onscene[13] ..
+			u8"\nНаказание:")
+			if imgui.Button(u8"Мат. ##13", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_13"].id .. " 300 Нецензурная лексика.")
+				log_onscene["player_13"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. ##13", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_13"].id .. " 400 Оскорбление игрока.")
+				log_onscene["player_13"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Униж. ##13", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_13"].id .. " 400 Унижение игрока игрока.")
+				log_onscene["player_13"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. Род. ##13", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_13"].id .. " 5000 Упоминание родителей.")
+				log_onscene["player_13"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. Адм. ##13", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_13"].id .. " 2500 Оскорбление администрации.")
+				log_onscene["player_13"].id = nil
+				controlOnscene()
+			end 	
+			if imgui.Button(u8"Очистить. ##13", imgui.ImVec2(90, 0)) then
+				log_onscene["player_13"].id = nil
+				controlOnscene()
+			end 	
+		end
+		if log_onscene["player_14"].id ~= nil then
+			imgui.Separator()
+			imgui.Text(u8"Ник игрока: " .. u8:encode(log_onscene["player_14"].name) .. " ID: " .. u8:encode(log_onscene["player_14"].id) .. 
+			u8"\nСлово, которое попало под подозрения: " .. u8:encode(log_onscene["player_14"].suspicion) .. 
+			u8"\nТекст из чата: " .. u8:encode(log_onscene["player_14"].text) .. 
+			u8"\nДата: " .. date_onscene[14] ..
+			u8"\nНаказание:")
+			if imgui.Button(u8"Мат. ##14", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_14"].id .. " 300 Нецензурная лексика.")
+				log_onscene["player_14"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. ##14", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_14"].id .. " 400 Оскорбление игрока.")
+				log_onscene["player_14"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Униж. ##14", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_14"].id .. " 400 Унижение игрока игрока.")
+				log_onscene["player_14"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. Род. ##14", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_14"].id .. " 5000 Упоминание родителей.")
+				log_onscene["player_14"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. Адм. ##14", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_14"].id .. " 2500 Оскорбление администрации.")
+				log_onscene["player_14"].id = nil
+				controlOnscene()
+			end 	
+			if imgui.Button(u8"Очистить. ##14", imgui.ImVec2(90, 0)) then
+				log_onscene["player_14"].id = nil
+				controlOnscene()
+			end 	
+		end
+		if log_onscene["player_15"].id ~= nil then
+			imgui.Separator()
+			imgui.Text(u8"Ник игрока: " .. u8:encode(log_onscene["player_15"].name) .. " ID: " .. u8:encode(log_onscene["player_15"].id) .. 
+			u8"\nСлово, которое попало под подозрения: " .. u8:encode(log_onscene["player_15"].suspicion) .. 
+			u8"\nТекст из чата: " .. u8:encode(log_onscene["player_15"].text) .. 
+			u8"\nДата: " .. date_onscene[15] ..
+			u8"\nНаказание:")
+			if imgui.Button(u8"Мат. ##15", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_15"].id .. " 300 Нецензурная лексика.")
+				log_onscene["player_15"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. ##15", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_15"].id .. " 400 Оскорбление игрока.")
+				log_onscene["player_15"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Униж. ##15", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_15"].id .. " 400 Унижение игрока игрока.")
+				log_onscene["player_15"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. Род. ##15", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_15"].id .. " 5000 Упоминание родителей.")
+				log_onscene["player_15"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. Адм. ##15", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_15"].id .. " 2500 Оскорбление администрации.")
+				log_onscene["player_15"].id = nil
+				controlOnscene()
+			end 	
+			if imgui.Button(u8"Очистить. ##15", imgui.ImVec2(90, 0)) then
+				log_onscene["player_15"].id = nil
+				controlOnscene()
+			end 	
+		end
+		if log_onscene["player_16"].id ~= nil then
+			imgui.Separator()
+			imgui.Text(u8"Ник игрока: " .. u8:encode(log_onscene["player_16"].name) .. " ID: " .. u8:encode(log_onscene["player_16"].id) .. 
+			u8"\nСлово, которое попало под подозрения: " .. u8:encode(log_onscene["player_16"].suspicion) .. 
+			u8"\nТекст из чата: " .. u8:encode(log_onscene["player_16"].text) .. 
+			u8"\nДата: " .. date_onscene[16] ..
+			u8"\nНаказание:")
+			if imgui.Button(u8"Мат. ##16", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_16"].id .. " 300 Нецензурная лексика.")
+				log_onscene["player_16"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. ##16", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_16"].id .. " 400 Оскорбление игрока.")
+				log_onscene["player_16"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Униж. ##16", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_16"].id .. " 400 Унижение игрока игрока.")
+				log_onscene["player_16"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. Род. ##16", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_16"].id .. " 5000 Упоминание родителей.")
+				log_onscene["player_16"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. Адм. ##16", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_16"].id .. " 2500 Оскорбление администрации.")
+				log_onscene["player_16"].id = nil
+				controlOnscene()
+			end 	
+			if imgui.Button(u8"Очистить. ##16", imgui.ImVec2(90, 0)) then
+				log_onscene["player_16"].id = nil
+				controlOnscene()
+			end 	
+		end
+		if log_onscene["player_17"].id ~= nil then
+			imgui.Separator()
+			imgui.Text(u8"Ник игрока: " .. u8:encode(log_onscene["player_17"].name) .. " ID: " .. u8:encode(log_onscene["player_17"].id) .. 
+			u8"\nСлово, которое попало под подозрения: " .. u8:encode(log_onscene["player_17"].suspicion) .. 
+			u8"\nТекст из чата: " .. u8:encode(log_onscene["player_17"].text) .. 
+			u8"\nДата: " .. date_onscene[17] ..
+			u8"\nНаказание:")
+			if imgui.Button(u8"Мат. ##17", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_17"].id .. " 300 Нецензурная лексика.")
+				log_onscene["player_17"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. ##17", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_17"].id .. " 400 Оскорбление игрока.")
+				log_onscene["player_17"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Униж. ##17", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_17"].id .. " 400 Унижение игрока игрока.")
+				log_onscene["player_17"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. Род. ##17", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_17"].id .. " 5000 Упоминание родителей.")
+				log_onscene["player_17"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. Адм. ##17", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_17"].id .. " 2500 Оскорбление администрации.")
+				log_onscene["player_17"].id = nil
+				controlOnscene()
+			end 	
+			if imgui.Button(u8"Очистить. ##17", imgui.ImVec2(90, 0)) then
+				log_onscene["player_17"].id = nil
+				controlOnscene()
+			end 	
+		end
+		if log_onscene["player_18"].id ~= nil then
+			imgui.Separator()
+			imgui.Text(u8"Ник игрока: " .. u8:encode(log_onscene["player_18"].name) .. " ID: " .. u8:encode(log_onscene["player_18"].id) .. 
+			u8"\nСлово, которое попало под подозрения: " .. u8:encode(log_onscene["player_18"].suspicion) .. 
+			u8"\nТекст из чата: " .. u8:encode(log_onscene["player_18"].text) .. 
+			u8"\nДата: " .. date_onscene[18] ..
+			u8"\nНаказание:")
+			if imgui.Button(u8"Мат. ##18", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_18"].id .. " 300 Нецензурная лексика.")
+				log_onscene["player_18"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. ##18", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_18"].id .. " 400 Оскорбление игрока.")
+				log_onscene["player_18"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Униж. ##18", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_18"].id .. " 400 Унижение игрока игрока.")
+				log_onscene["player_18"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. Род. ##18", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_18"].id .. " 5000 Упоминание родителей.")
+				log_onscene["player_18"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. Адм. ##18", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_18"].id .. " 2500 Оскорбление администрации.")
+				log_onscene["player_18"].id = nil
+				controlOnscene()
+			end		
+			if imgui.Button(u8"Очистить. ##18", imgui.ImVec2(90, 0)) then
+				log_onscene["player_18"].id = nil
+				controlOnscene()
+			end 
+		end
+		if log_onscene["player_19"].id ~= nil then
+			imgui.Separator()
+			imgui.Text(u8"Ник игрока: " .. u8:encode(log_onscene["player_19"].name) .. " ID: " .. u8:encode(log_onscene["player_19"].id) .. 
+			u8"\nСлово, которое попало под подозрения: " .. u8:encode(log_onscene["player_19"].suspicion) .. 
+			u8"\nТекст из чата: " .. u8:encode(log_onscene["player_19"].text) ..
+			u8"\nДата: " .. date_onscene[19] .. 
+			u8"\nНаказание:")
+			if imgui.Button(u8"Мат. ##19", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_19"].id .. " 300 Нецензурная лексика.")
+				log_onscene["player_19"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. ##19", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_19"].id .. " 400 Оскорбление игрока.")
+				log_onscene["player_19"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Униж. ##19", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_19"].id .. " 400 Унижение игрока игрока.")
+				log_onscene["player_19"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. Род. ##19", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_19"].id .. " 5000 Упоминание родителей.")
+				log_onscene["player_19"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. Адм. ##19", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_19"].id .. " 2500 Оскорбление администрации.")
+				log_onscene["player_19"].id = nil
+				controlOnscene()
+			end		
+			if imgui.Button(u8"Очистить. ##19", imgui.ImVec2(90, 0)) then
+				log_onscene["player_19"].id = nil
+				controlOnscene()
+			end 
+		end
+		if log_onscene["player_20"].id ~= nil then
+			imgui.Separator()
+			imgui.Text(u8"Ник игрока: " .. u8:encode(log_onscene["player_20"].name) .. " ID: " .. u8:encode(log_onscene["player_20"].id) .. 
+			u8"\nСлово, которое попало под подозрения: " .. u8:encode(log_onscene["player_20"].suspicion) .. 
+			u8"\nТекст из чата: " .. u8:encode(log_onscene["player_20"].text) ..
+			u8"\nДата: " .. date_onscene[20] .. 
+			u8"\nНаказание:")
+			if imgui.Button(u8"Мат. ##20", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_20"].id .. " 300 Нецензурная лексика.")
+				log_onscene["player_20"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. ##20", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_20"].id .. " 400 Оскорбление игрока.")
+				log_onscene["player_20"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Униж. ##20", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_20"].id .. " 400 Унижение игрока игрока.")
+				log_onscene["player_20"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. Род. ##20", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_20"].id .. " 5000 Упоминание родителей.")
+				log_onscene["player_20"].id = nil
+				controlOnscene()
+			end
+			imgui.SameLine()
+			if imgui.Button(u8"Оск. Адм. ##20", imgui.ImVec2(90, 0)) then
+				sampSendChat("/mute " .. log_onscene["player_20"].id .. " 2500 Оскорбление администрации.")
+				log_onscene["player_20"].id = nil
+				controlOnscene()
+			end	
+			if imgui.Button(u8"Очистить. ##20", imgui.ImVec2(90, 0)) then
+				log_onscene["player_20"].id = nil
+				controlOnscene()
+			end 
+		end
+		imgui.Separator()
 		imgui.End()
 	end
 end

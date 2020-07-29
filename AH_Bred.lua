@@ -97,8 +97,8 @@ apply_custom_style()
 
 -- [x] -- Переменные. -- [x] --
 update_state = false
-local script_version = 2
-local script_version_text = "1.1 bug-fix"
+local script_version = 3
+local script_version_text = "1.2 bug-fix"
 local update_url = "https://raw.githubusercontent.com/YamadaEnotic/AH-Script/master/update.ini"
 local update_path = getWorkingDirectory() .. '/update.ini'
 local script_url = "https://raw.githubusercontent.com/YamadaEnotic/AH-Script/master/AH_Bred.lua"
@@ -492,7 +492,7 @@ local download_aditional = {
 	}
 }
 local onscene = {
-	"6ля", "6лядь", "6лять", "b3ъeб", "cock", "cunt",
+	"test", "6ля", "6лядь", "6лять", "b3ъeб", "cock", "cunt",
 	"e6aль", "ebal", "eblan", "eбaл", "eбaть", "eбyч",
 	"eбать", "eбёт", "eблантий", "fuck", "fucker",
 	"fucking", "xyёв", "xyй", "xyя", "xуе", "xуй", "xую",
@@ -875,19 +875,20 @@ function sampev.onServerMessage(color, text)
 		for key, value in pairs(onscene) do
 			if string.find(check_mat, value) ~= nil then
 				local number_log_player
-				for i = 1, 20, 1 do
+				local i = 1
+				while i <= 20 do
 					if log_onscene["player_" .. i].id == nil then
 						number_log_player = i
+						log_onscene["player_" .. number_log_player].id = tonumber(check_mat_id)
+						log_onscene["player_" .. number_log_player].name = sampGetPlayerNickname(tonumber(check_mat_id))
+						log_onscene["player_" .. number_log_player].text = check_mat
+						log_onscene["player_" .. number_log_player].suspicion = value
+						date_onscene[number_log_player] = os.date()
+						showNotification("Детектор!", "Детектор обнаружил нарушение! \nЗапрещенное слово: {FF0000}" .. value .. "\n{FFFFFF}Ник нарушителя: {FF0000}" .. sampGetPlayerNickname(tonumber(check_mat_id)))
+						break
 					end
+					i = i + 1;
 				end
-				sampAddChatMessage(tag .. " Number: " .. number_log_player .. " Value: "  .. value)
-				log_onscene["player_" .. number_log_player].id = tonumber(check_mat_id)
-				log_onscene["player_" .. number_log_player].name = sampGetPlayerNickname(tonumber(check_mat_id))
-				log_onscene["player_" .. number_log_player].text = check_mat
-				log_onscene["player_" .. number_log_player].suspicion = value
-				date_onscene[number_log_player] = os.date()
-				showNotification("Детектор!", "Детектор обнаружил нарушение! \nЗапрещенное слово: {FF0000}" .. value .. "\n{FFFFFF}Ник нарушителя: {FF0000}" .. sampGetPlayerNickname(tonumber(check_mat_id)))
-				break
 			end
 		end
 		return true
@@ -937,23 +938,26 @@ function showNotification(handle, text_not)
 	setAudioStreamState(load_audio, ev.PLAY)
 end
 function controlOnscene()
-	local number_log_player
-	for i = 1, 20, 1 do
+	local number_log_player, number_log_player_2
+	local i = 1
+	while i < 20 do
 		number_log_player = i
-		if log_onscene["player_" .. number_log_player].id == nil
-		then
-			
-			log_onscene["player_" .. number_log_player].id = log_onscene["player_" .. number_log_player+1].id
-			log_onscene["player_" .. number_log_player+1].id = nil
-			log_onscene["player_" .. number_log_player].name = log_onscene["player_" .. number_log_player+1].name
-			log_onscene["player_" .. number_log_player+1].name = " "
-			log_onscene["player_" .. number_log_player].text = log_onscene["player_" .. number_log_player+1].text
-			log_onscene["player_" .. number_log_player+1].text = " "
-			log_onscene["player_" .. number_log_player].suspicion = log_onscene["player_" .. number_log_player+1].suspicion
-			log_onscene["player_" .. number_log_player+1].suspicion = " "
-			date_onscene[i] = date_onscene[number_log_playe+1]
-			date_onscene[i] = " "
+		number_log_player_2 = number_log_player + 1
+		if log_onscene["player_" .. number_log_player].id == nil then
+			if log_onscene["player_" .. number_log_player_2].id ~= nil then
+				log_onscene["player_" .. number_log_player].id = log_onscene["player_" .. number_log_player_2].id
+				log_onscene["player_" .. number_log_player_2].id = nil
+				log_onscene["player_" .. number_log_player].name = log_onscene["player_" .. number_log_player_2].name
+				log_onscene["player_" .. number_log_player_2].name = " "
+				log_onscene["player_" .. number_log_player].text = log_onscene["player_" .. number_log_player_2].text
+				log_onscene["player_" .. number_log_player_2].text = " "
+				log_onscene["player_" .. number_log_player].suspicion = log_onscene["player_" .. number_log_player_2].suspicion
+				log_onscene["player_" .. number_log_player_2].suspicion = " "
+				date_onscene[number_log_player] = date_onscene[number_log_player_2]
+				date_onscene[number_log_player_2] = nil
+			end
 		end
+		i = i + 1;
 	end
 end
 

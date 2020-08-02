@@ -8,6 +8,9 @@ local sampev							= require "lib.samp.events"
 local font_admin_chat					= require ("moonloader").font_flag
 local ev								= require ("moonloader").audiostream_state
 local dlstat							= require ("moonloader").download_status
+local ffi 								= require "ffi"
+local getBonePosition 					= ffi.cast("int (__thiscall*)(void*, float*, int, bool)", 0x5E4280)
+local mem 								= require "memory"
 local imgui 							= require "imgui"
 local encoding							= require "encoding"
 local vkeys								= require "lib.vkeys"
@@ -54,7 +57,7 @@ function apply_custom_style()
 	-- style.AntiAliasedShapes =
 	-- style.CurveTessellationTol =
 
-	colors[clr.WindowBg]              = ImVec4(0.14, 0.12, 0.16, 1.00);
+	colors[clr.WindowBg]              = ImVec4(0.14, 0.12, 0.16, 0.85);
 	colors[clr.ChildWindowBg]         = ImVec4(0.30, 0.20, 0.39, 0.00);
 	colors[clr.PopupBg]               = ImVec4(0.05, 0.05, 0.10, 0.90);
 	colors[clr.Border]                = ImVec4(0.89, 0.85, 0.92, 0.30);
@@ -97,8 +100,8 @@ apply_custom_style()
 
 -- [x] -- Переменные. -- [x] --
 update_state = false
-local script_version = 3
-local script_version_text = "1.2 bug-fix"
+local script_version = 4
+local script_version_text = "2.0"
 local update_url = "https://raw.githubusercontent.com/YamadaEnotic/AH-Script/master/update.ini"
 local update_path = getWorkingDirectory() .. '/update.ini'
 local script_url = "https://raw.githubusercontent.com/YamadaEnotic/AH-Script/master/AH_Bred.lua"
@@ -111,11 +114,14 @@ local load_audio = loadAudioStream('moonloader/config/AH_Setting/audio/notificat
 local defTable = {
 	setting = {
 		Tranparency = false,
+		Auto_remenu = false,
 		Fast_ans = false,
 		Punishments = false,
 		Index = 2.0,
 		Admin_chat = false,
-		Font = 10
+		Font = 10,
+		Push_Report = false,
+		Chat_Logger = false
 	}
 }
 local admin_chat_lines = {
@@ -737,20 +743,38 @@ local log_onscene = {
 	}
 }
 local date_onscene = {}
+local text_remenu = { "Очки:", "Здоровье:", "Броня:", "ХП машины:", "Скорость:", "Ping:", "Патроны:", "Выстрелы:", "Время выстрелов:", "Время АФК:", "P.Loss:", "VIP:", "Passive Мод:", "Turbo:", "Коллизия:" }
+local player_info = {}
+local player_to_streamed = {}
+local control_recon_playerid = -1
+local control_tab_playerid = -1
+local control_recon_playernick = nil
+local next_recon_playerid = nil
+local control_recon = false
+local control_info_load = false
+local accept_load = false
+local check_mouse = false
+local check_cmd_re = false
+local control_wallhack = false
+local jail_or_ban_re
 
 -- [x] -- ImGUI переменные. -- [x] --
 local i_ans_window = imgui.ImBool(false)
 local i_setting_items = imgui.ImBool(false)
 local i_back_prefix = imgui.ImBool(false)
 local i_log_onscene = imgui.ImBool(false)
+local i_re_menu = imgui.ImBool(false)
 local font_size_ac = imgui.ImBuffer(16)
+local logo_image
 local setting_items = {
 	Fast_ans = imgui.ImBool(false),
 	Punishments = imgui.ImBool(false),
 	Admin_chat = imgui.ImBool(false),
-	Transparency = imgui.ImBool(true)
+	Transparency = imgui.ImBool(true),
+	Auto_remenu = imgui.ImBool(false),
+	Push_Report = imgui.ImBool(false),
+	Chat_Logger = imgui.ImBool(false)
 }
-
 -- [x] -- Тело скрипта. -- [x] --
 function main()
 	-- [x] -- Проверка на запуск сампа и СФ. -- [x] --
@@ -773,13 +797,23 @@ function main()
 	setting_items.Fast_ans.v = config.setting.Fast_ans
 	setting_items.Punishments.v = config.setting.Punishments
 	setting_items.Admin_chat.v = config.setting.Admin_chat
+	setting_items.Transparency.v = config.setting.Tranparency
+	setting_items.Auto_remenu.v = config.setting.Auto_remenu
+	setting_items.Push_Report.v = config.setting.Push_Report
+	setting_items.Chat_Logger.v = config.setting.Chat_Logger
 	font_size_ac.v = tostring(config.setting.Font)
 	index_text_pos = config.setting.Index
 	font_ac = renderCreateFont("Arial", config.setting.Font, font_admin_chat.BOLD + font_admin_chat.SHADOW)
 	
 	admin_chat = lua_thread.create_suspended(drawAdminChat)
 	check_dialog_active = lua_thread.create_suspended(checkIsDialogActive)
-	
+	draw_re_menu = lua_thread.create_suspended(drawRePlayerInfo)
+	load_info_player = lua_thread.create_suspended(loadPlayerInfo)
+	wallhack = lua_thread.create(drawWallhack)
+	check_cmd = lua_thread.create_suspended(function()
+		wait(1000)
+		check_cmd_re = false
+	end)
 	sampAddChatMessage(tag .. "Загрузка прошла успешно.")
 	
 	downloadUrlToFile(update_url, update_path, function(id, status)
@@ -798,16 +832,29 @@ function main()
 	
 	admin_chat:run()
 	
+	logo_image = imgui.CreateTextureFromFile(getWorkingDirectory() .. "\\config\\AH_Setting\\1.png")
+	
 	-- [x] -- Беск. цикл. -- [x] --
 	while true do
 		if isKeyJustPressed(VK_END) and (sampIsChatInputActive() == false) and (sampIsDialogActive() == false) then
 			i_setting_items.v = not i_setting_items.v
-			imgui.Process = i_setting_items.v
+			imgui.Process = true
+		end
+		if control_recon and recon_to_player then
+			if control_info_load then
+				control_info_load = false
+				load_info_player:run()
+				i_re_menu.v = true
+				imgui.Process = true
+				jail_or_ban_re = 0
+			end
+		else
+			i_re_menu.v = false
 		end
 		if isKeyJustPressed(VK_X) and (sampIsChatInputActive() == false) and (sampIsDialogActive() == false) then
 			setting_items.Admin_chat.v = not setting_items.Admin_chat.v
 		end
-		if not i_setting_items.v and not i_ans_window.v and not i_log_onscene.v then
+		if not i_setting_items.v and not i_ans_window.v and not i_log_onscene.v and not i_re_menu.v then
 			imgui.Process = false
 		end
 		if sampGetCurrentDialogId() == 2351 and setting_items.Fast_ans.v and sampIsDialogActive() then
@@ -816,15 +863,100 @@ function main()
 		else 
 			i_ans_window.v = false
 		end
-		if --[[isKeyDown(VK_MENU) and ]]isKeyJustPressed(VK_B) and (sampIsChatInputActive() == false) and (sampIsDialogActive() == false) then
+		if --[[isKeyDown(VK_MENU) and ]]isKeyJustPressed(VK_B) and setting_items.Chat_Logger.v and (sampIsChatInputActive() == false) and (sampIsDialogActive() == false) then
 			i_log_onscene.v = not i_log_onscene.v
-			imgui.Process = i_log_onscene.v
+			imgui.Process = true
+		end
+		if isKeyDown(VK_RBUTTON) and (sampIsChatInputActive() == false) and (sampIsDialogActive() == false) and control_recon and recon_to_player then
+			check_mouse = false
+		else
+			check_mouse = true		
+		end
+		if not sampIsPlayerConnected(control_recon_playerid) then
+			i_re_menu.v = false
+			control_recon_playerid = -1
 		end
 		wait(0)
 	end
 end
 
 -- [x] -- Доп. функции -- [x] --
+-- {0777A3}[AH by Yamada.]: {CCCCCC} ID: 2067 Text: 190~n~100.000000~n~100.000000~n~-1~n~0 / 28~n~74~n~0 : 0 ~n~0 / 0 : 0~n~0 / 0 : 0~n~0~n~0.00 ~n
+function sampev.onTextDrawSetString(id, text)
+	--sampAddChatMessage(tag .. " ID: " .. id .. " Text: " .. text)
+	if id == 2067 then
+		player_info = textSplit(text, "~n~")
+	end
+end
+-- {0777A3}[AH by Yamada.]: {CCCCCC} ID: 199 Text: Score: Health: Armour: CarHP: Speed: Ping: Ammo: Shot: TimeShot: AFKTime: P.Loss: VIP: Passive Mode: Turbo: Collision:
+function sampev.onShowTextDraw(id, data)
+	if id == 461 then return false end
+	if id == 462 then return false end
+	if id == 2 then return false end
+	if id == 199 then return false end
+	if id == 2067 then return false end
+	if id == 2100 then return false end
+	if id == 418 then return false end
+	if id == 419 then return false end
+	if id == 420 then return false end
+	if id == 421 then return false end
+	if id == 422 then return false end
+	if id == 423 then return false end
+	if id == 424 then return false end
+	if id == 425 then return false end
+	if id == 426 then return false end
+	if id == 427 then return false end
+	if id == 428 then return false end
+	if id == 429 then return false end
+	if id == 430 then return false end
+	if id == 431 then return false end
+	if id == 432 then return false end
+	if id == 433 then return false end
+	if id == 434 then return false end
+	if id == 435 then return false end
+	if id == 436 then return false end
+	if id == 437 then return false end
+	if id == 438 then return false end
+	if id == 439 then return false end
+	if id == 440 then return false end
+	if id == 441 then return false end
+	if id == 442 then return false end
+	if id == 443 then return false end
+	if id == 444 then return false end
+	if id == 445 then return false end
+	if id == 446 then return false end
+	if id == 447 then return false end
+	if id == 448 then return false end
+	if id == 449 then return false end
+	if id == 450 then return false end
+	if id == 451 then return false end
+	if id == 452 then return false end
+	if id == 453 then return false end
+	--sampAddChatMessage(tag .. " ID: " .. id .. " Text: " .. data.text)
+end
+function sampev.onSendCommand(command)
+	--sampAddChatMessage(tag .. " " .. command)
+	local id = string.match(command, "/re (%d+)")
+	if id ~= nil and not check_cmd_re then
+		recon_to_player = true
+		if control_recon then
+			control_info_load = true
+			accept_load = false
+		end
+		control_recon_playerid = id
+		if setting_items.Auto_remenu.v then
+			check_cmd_re = true
+			sampSendChat("/re " .. id)
+			check_cmd:run()
+			sampSendChat("/remenu")
+		end
+	end
+	if command == "/reoff" then
+		recon_to_player = false
+		check_mouse = false
+		control_recon_playerid = -1
+	end
+end
 function sampev.onSendChat(message)
 	-- [x] -- Захват строки для дальнейшей обработки. -- [x] --
 	if setting_items.Punishments.v then
@@ -836,7 +968,7 @@ function sampev.onSendChat(message)
 end
 function sampev.onServerMessage(color, text)
 	local check_string = string.match(text, "[^%s]+")
-	local _, check_mat_id, check_mat = string.match(text, "(.+)%((.+)%): (.+)")
+	local _, check_mat_id, _, check_mat = string.match(text, "(.+)%((.+)%): {(.+)}(.+)")
 	if setting_items.Admin_chat.v and (check_string == '[A-1]' 
 	or check_string == '[A-2]' 
 	or check_string == '[A-3]' 
@@ -867,11 +999,11 @@ function sampev.onServerMessage(color, text)
 		admin_chat_lines.chat_line_2 = admin_chat_lines.chat_line_1
 		admin_chat_lines.chat_line_1 = text
 		return false
-	elseif check_string == '(Жалоба/Вопрос)' then
+	elseif check_string == '(Жалоба/Вопрос)' and setting_items.Push_Report.v then
 		showNotification("Уведомление", "Поступил новый репорт.")
 		return true
 	end
-	if check_mat ~= nil and check_mat_id ~= nil then
+	if check_mat ~= nil and check_mat_id ~= nil and setting_items.Chat_Logger.v then
 		for key, value in pairs(onscene) do
 			if string.find(check_mat, value) ~= nil then
 				local number_log_player
@@ -884,7 +1016,7 @@ function sampev.onServerMessage(color, text)
 						log_onscene["player_" .. number_log_player].text = check_mat
 						log_onscene["player_" .. number_log_player].suspicion = value
 						date_onscene[number_log_player] = os.date()
-						showNotification("Детектор!", "Детектор обнаружил нарушение! \nЗапрещенное слово: {FF0000}" .. value .. "\n{FFFFFF}Ник нарушителя: {FF0000}" .. sampGetPlayerNickname(tonumber(check_mat_id)))
+						showNotification("Детектор обнаружил нарушение!", "Запрещенное слово: {FF0000}" .. value .. "\n {FFFFFF}Ник нарушителя: {FF0000}" .. sampGetPlayerNickname(tonumber(check_mat_id)))
 						break
 					end
 					i = i + 1;
@@ -893,7 +1025,26 @@ function sampev.onServerMessage(color, text)
 		end
 		return true
 	end
-
+	if text == "Вы отключили меню при наблюдении" and setting_items.Auto_remenu.v then
+		sampSendChat("/remenu")
+		return false
+	end
+	if text == "Вы включили меню при наблюдении" then
+		control_recon = true
+		if recon_to_player then
+			control_info_load = true
+			accept_load = false
+		end
+		return false
+	end
+	if text == "Вы отключили меню при наблюдении" and not setting_items.Auto_remenu.v then
+		control_recon = false
+		return false
+	end
+	if (text == "Игрок не в сети" and recon_to_player) or (text == "[Информация] {ffeabf}Вы не можете следить за администратором который выше уровнем." and recon_to_player) then
+		recon_to_player = false
+		sampSendChat("/reoff")
+	end
 end
 function sampev.onShowDialog(dialogid, _, _, _, _, _)
 	--sampAddChatMessage(tag .. dialogid)
@@ -934,7 +1085,7 @@ function drawAdminChat()
 	end
 end
 function showNotification(handle, text_not)
-	notfy.addNotify("{6930A1}" .. handle, " \n " .. text_not .. " \n", 2, 1, 10)
+	notfy.addNotify("{6930A1}" .. handle, " \n " .. text_not, 2, 1, 10)
 	setAudioStreamState(load_audio, ev.PLAY)
 end
 function controlOnscene()
@@ -960,12 +1111,120 @@ function controlOnscene()
 		i = i + 1;
 	end
 end
+function playersToStreamZone()
+	local peds = getAllChars()
+	local streaming_player = {}
+	local _, pid = sampGetPlayerIdByCharHandle(PLAYER_PED)
+	for key, v in pairs(peds) do
+		local result, id = sampGetPlayerIdByCharHandle(v)
+		if result and id ~= pid and id ~= tonumber(control_recon_playerid) then
+			streaming_player[key] = id
+		end
+	end
+	return streaming_player
+end
+function loadPlayerInfo()
+	wait(3000)
+	accept_load = true
+end
+function convert3Dto2D(x, y, z)
+    local result, wposX, wposY, wposZ, w, h = convert3DCoordsToScreenEx(x, y, z, true, true)
+    local fullX = readMemory(0xC17044, 4, false)
+    local fullY = readMemory(0xC17048, 4, false)
+    wposX = wposX * (640.0 / fullX)
+    wposY = wposY * (448.0 / fullY)
+    return result, wposX, wposY
+end
+function drawWallhack()
+	local peds = getAllChars()
+	local _, pid = sampGetPlayerIdByCharHandle(PLAYER_PED)
+	while true do
+		wait(10)
+		for i = 0, sampGetMaxPlayerId() do
+			if sampIsPlayerConnected(i) and control_wallhack then
+				local result, cped = sampGetCharHandleBySampPlayerId(i)
+				local color = sampGetPlayerColor(i)
+				local aa, rr, gg, bb = explode_argb(color)
+				local color = join_argb(255, rr, gg, bb)
+				if result then
+					if doesCharExist(cped) and isCharOnScreen(cped) then
+						local t = {3, 4, 5, 51, 52, 41, 42, 31, 32, 33, 21, 22, 23, 2}
+						for v = 1, #t do
+							pos1X, pos1Y, pos1Z = getBodyPartCoordinates(t[v], cped)
+							pos2X, pos2Y, pos2Z = getBodyPartCoordinates(t[v] + 1, cped)
+							pos1, pos2 = convert3DCoordsToScreen(pos1X, pos1Y, pos1Z)
+							pos3, pos4 = convert3DCoordsToScreen(pos2X, pos2Y, pos2Z)
+							renderDrawLine(pos1, pos2, pos3, pos4, 1, color)
+						end
+						for v = 4, 5 do
+							pos2X, pos2Y, pos2Z = getBodyPartCoordinates(v * 10 + 1, cped)
+							pos3, pos4 = convert3DCoordsToScreen(pos2X, pos2Y, pos2Z)
+							renderDrawLine(pos1, pos2, pos3, pos4, 1, color)
+						end
+						local t = {53, 43, 24, 34, 6}
+						for v = 1, #t do
+							posX, posY, posZ = getBodyPartCoordinates(t[v], cped)
+							pos1, pos2 = convert3DCoordsToScreen(posX, posY, posZ)
+						end
+					end
+				end
+			end
+		end
+	end
+end
+function getBodyPartCoordinates(id, handle)
+  local pedptr = getCharPointer(handle)
+  local vec = ffi.new("float[3]")
+  getBonePosition(ffi.cast("void*", pedptr), vec, id, true)
+  return vec[0], vec[1], vec[2]
+end
+function join_argb(a, r, g, b)
+  local argb = b  -- b
+  argb = bit.bor(argb, bit.lshift(g, 8))  -- g
+  argb = bit.bor(argb, bit.lshift(r, 16)) -- r
+  argb = bit.bor(argb, bit.lshift(a, 24)) -- a
+  return argb
+end
+function explode_argb(argb)
+  local a = bit.band(bit.rshift(argb, 24), 0xFF)
+  local r = bit.band(bit.rshift(argb, 16), 0xFF)
+  local g = bit.band(bit.rshift(argb, 8), 0xFF)
+  local b = bit.band(argb, 0xFF)
+  return a, r, g, b
+end
+function nameTagOn()
+	local pStSet = sampGetServerSettingsPtr();
+	NTdist = mem.getfloat(pStSet + 39)
+	NTwalls = mem.getint8(pStSet + 47)
+	NTshow = mem.getint8(pStSet + 56)
+	mem.setfloat(pStSet + 39, 1488.0)
+	mem.setint8(pStSet + 47, 0)
+	mem.setint8(pStSet + 56, 1)
+	nameTag = true
+end
+function nameTagOff()
+	local pStSet = sampGetServerSettingsPtr();
+	mem.setfloat(pStSet + 39, NTdist)
+	mem.setint8(pStSet + 47, NTwalls)
+	mem.setint8(pStSet + 56, NTshow)
+	nameTag = false
+end
+function textSplit(str, delim, plain)
+    local tokens, pos, plain = {}, 1, not (plain == false) --[[ delimiter is plain text by default ]]
+    repeat
+        local npos, epos = string.find(str, delim, pos, plain)
+        table.insert(tokens, string.sub(str, pos, npos and npos - 1))
+        pos = epos and epos + 1
+    until not pos
+    return tokens
+end
 
 -- [x] -- ImGUI тело. -- [x] --
 local W_Windows = sw/1.145
 local H_Windows = 1
 local text_dialog
 function imgui.OnDrawFrame()
+	imgui.ShowCursor = check_mouse
 	if i_ans_window.v then
 		imgui.SetNextWindowPos(imgui.ImVec2(W_Windows, H_Windows), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
 		imgui.SetNextWindowSize(imgui.ImVec2(280, 700), imgui.Cond.FirstUseEver)
@@ -1263,13 +1522,25 @@ function imgui.OnDrawFrame()
 		imgui.End()
 	end
 	if i_setting_items.v then
-		imgui.SetNextWindowPos(imgui.ImVec2(W_Windows, H_Windows), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
-		imgui.SetNextWindowSize(imgui.ImVec2(300, 400), imgui.Cond.FirstUseEver)
+		imgui.SetNextWindowPos(imgui.ImVec2(sw-10, 10), imgui.Cond.FirstUseEver, imgui.ImVec2(1, 0.5))
+		imgui.SetNextWindowSize(imgui.ImVec2(300, 500), imgui.Cond.FirstUseEver)
 		imgui.Begin(u8"Настройки скрипта.", i_setting_items)
+		imgui.Text(u8"Автоматическое включение /remenu.")
+		imgui.SameLine()
+		imgui.SetCursorPosX(imgui.GetWindowWidth() - 35)
+		imgui.ToggleButton("##5", setting_items.Auto_remenu)
 		imgui.Text(u8"Быстрые ответы на ANS.")
 		imgui.SameLine()
 		imgui.SetCursorPosX(imgui.GetWindowWidth() - 35)
 		imgui.ToggleButton("##1", setting_items.Fast_ans)
+		imgui.Text(u8"Уведомления о репорте.")
+		imgui.SameLine()
+		imgui.SetCursorPosX(imgui.GetWindowWidth() - 35)
+		imgui.ToggleButton("##6", setting_items.Push_Report)
+		imgui.Text(u8"Чат-логгер.")
+		imgui.SameLine()
+		imgui.SetCursorPosX(imgui.GetWindowWidth() - 35)
+		imgui.ToggleButton("##7", setting_items.Chat_Logger)
 		--[[imgui.Text(u8"Сокращенные команды наказаний.")
 		imgui.SameLine()
 		imgui.SetCursorPosX(imgui.GetWindowWidth() - 35)
@@ -1302,8 +1573,14 @@ function imgui.OnDrawFrame()
 			config.setting.Punishments = setting_items.Punishments.v
 			config.setting.Font = font_size_ac.v
 			config.setting.Tranparency = setting_items.Transparency.v
+			config.setting.Auto_remenu = setting_items.Auto_remenu.v
+			config.setting.Push_Report = setting_items.Push_Report.v
+			config.setting.Chat_Logger = setting_items.Chat_Logger.v
 			inicfg.save(config, directIni)
 		end	
+		imgui.Separator()
+		imgui.SetCursorPosX(imgui.GetWindowWidth()/2-100)
+		imgui.Image(logo_image, imgui.ImVec2(200, 200))
 		if update_state then
 			imgui.SetCursorPosY(imgui.GetWindowHeight() - 55)
 			imgui.Separator()
@@ -1327,7 +1604,7 @@ function imgui.OnDrawFrame()
 		end
 		imgui.End()
 	end
-	if i_log_onscene.v then
+	if i_log_onscene.v and setting_items.Chat_Logger.v then
 		imgui.SetNextWindowPos(imgui.ImVec2(10, 10), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
 		imgui.SetNextWindowSize(imgui.ImVec2(sw - 10, 400), imgui.Cond.FirstUseEver)
 		imgui.Begin(u8"Наказания за нарушение в чате.", i_log_onscene)
@@ -1368,6 +1645,7 @@ function imgui.OnDrawFrame()
 				log_onscene["player_1"].id = nil
 				controlOnscene()
 			end 
+			imgui.SameLine()
 			if imgui.Button(u8"Очистить. ##1", imgui.ImVec2(90, 0)) then
 				log_onscene["player_1"].id = nil
 				controlOnscene()
@@ -1409,6 +1687,7 @@ function imgui.OnDrawFrame()
 				log_onscene["player_2"].id = nil
 				controlOnscene()
 			end 
+			imgui.SameLine()
 			if imgui.Button(u8"Очистить. ##2", imgui.ImVec2(90, 0)) then
 				log_onscene["player_2"].id = nil
 				controlOnscene()
@@ -1450,6 +1729,7 @@ function imgui.OnDrawFrame()
 				log_onscene["player_3"].id = nil
 				controlOnscene()
 			end 
+			imgui.SameLine()
 			if imgui.Button(u8"Очистить. ##3", imgui.ImVec2(90, 0)) then
 				log_onscene["player_3"].id = nil
 				controlOnscene()
@@ -1490,6 +1770,7 @@ function imgui.OnDrawFrame()
 				log_onscene["player_4"].id = nil
 				controlOnscene()
 			end 	
+			imgui.SameLine()
 			if imgui.Button(u8"Очистить. ##4", imgui.ImVec2(90, 0)) then
 				log_onscene["player_4"].id = nil
 				controlOnscene()
@@ -1531,6 +1812,7 @@ function imgui.OnDrawFrame()
 				log_onscene["player_5"].id = nil
 				controlOnscene()
 			end 	
+			imgui.SameLine()
 			if imgui.Button(u8"Очистить. ##5", imgui.ImVec2(90, 0)) then
 				log_onscene["player_5"].id = nil
 				controlOnscene()
@@ -1571,7 +1853,8 @@ function imgui.OnDrawFrame()
 				sampSendChat("/mute " .. log_onscene["player_6"].id .. " 2500 Оскорбление администрации.")
 				log_onscene["player_6"].id = nil
 				controlOnscene()
-			end 	
+			end 
+			imgui.SameLine()	
 			if imgui.Button(u8"Очистить. ##6", imgui.ImVec2(90, 0)) then
 				log_onscene["player_6"].id = nil
 				controlOnscene()
@@ -1612,7 +1895,8 @@ function imgui.OnDrawFrame()
 				sampSendChat("/mute " .. log_onscene["player_7"].id .. " 2500 Оскорбление администрации.")
 				log_onscene["player_7"].id = nil
 				controlOnscene()
-			end 	
+			end 
+			imgui.SameLine()	
 			if imgui.Button(u8"Очистить. ##7", imgui.ImVec2(90, 0)) then
 				log_onscene["player_7"].id = nil
 				controlOnscene()
@@ -1653,7 +1937,8 @@ function imgui.OnDrawFrame()
 				sampSendChat("/mute " .. log_onscene["player_8"].id .. " 2500 Оскорбление администрации.")
 				log_onscene["player_8"].id = nil
 				controlOnscene()
-			end 	
+			end 
+			imgui.SameLine()	
 			if imgui.Button(u8"Очистить. ##8", imgui.ImVec2(90, 0)) then
 				log_onscene["player_8"].id = nil
 				controlOnscene()
@@ -1694,7 +1979,8 @@ function imgui.OnDrawFrame()
 				sampSendChat("/mute " .. log_onscene["player_9"].id .. " 2500 Оскорбление администрации.")
 				log_onscene["player_9"].id = nil
 				controlOnscene()
-			end 	
+			end 
+			imgui.SameLine()	
 			if imgui.Button(u8"Очистить. ##9", imgui.ImVec2(90, 0)) then
 				log_onscene["player_9"].id = nil
 				controlOnscene()
@@ -1735,7 +2021,8 @@ function imgui.OnDrawFrame()
 				sampSendChat("/mute " .. log_onscene["player_10"].id .. " 2500 Оскорбление администрации.")
 				log_onscene["player_10"].id = nil
 				controlOnscene()
-			end 	
+			end 
+			imgui.SameLine()	
 			if imgui.Button(u8"Очистить. ##10", imgui.ImVec2(90, 0)) then
 				log_onscene["player_10"].id = nil
 				controlOnscene()
@@ -1776,7 +2063,8 @@ function imgui.OnDrawFrame()
 				sampSendChat("/mute " .. log_onscene["player_11"].id .. " 2500 Оскорбление администрации.")
 				log_onscene["player_11"].id = nil
 				controlOnscene()
-			end 	
+			end 
+			imgui.SameLine()	
 			if imgui.Button(u8"Очистить. ##11", imgui.ImVec2(90, 0)) then
 				log_onscene["player_11"].id = nil
 				controlOnscene()
@@ -1818,6 +2106,7 @@ function imgui.OnDrawFrame()
 				log_onscene["player_12"].id = nil
 				controlOnscene()
 			end 	
+			imgui.SameLine()
 			if imgui.Button(u8"Очистить. ##12", imgui.ImVec2(90, 0)) then
 				log_onscene["player_12"].id = nil
 				controlOnscene()
@@ -1858,7 +2147,8 @@ function imgui.OnDrawFrame()
 				sampSendChat("/mute " .. log_onscene["player_13"].id .. " 2500 Оскорбление администрации.")
 				log_onscene["player_13"].id = nil
 				controlOnscene()
-			end 	
+			end 
+			imgui.SameLine()	
 			if imgui.Button(u8"Очистить. ##13", imgui.ImVec2(90, 0)) then
 				log_onscene["player_13"].id = nil
 				controlOnscene()
@@ -1899,7 +2189,8 @@ function imgui.OnDrawFrame()
 				sampSendChat("/mute " .. log_onscene["player_14"].id .. " 2500 Оскорбление администрации.")
 				log_onscene["player_14"].id = nil
 				controlOnscene()
-			end 	
+			end 
+			imgui.SameLine()	
 			if imgui.Button(u8"Очистить. ##14", imgui.ImVec2(90, 0)) then
 				log_onscene["player_14"].id = nil
 				controlOnscene()
@@ -1941,6 +2232,7 @@ function imgui.OnDrawFrame()
 				log_onscene["player_15"].id = nil
 				controlOnscene()
 			end 	
+			imgui.SameLine()
 			if imgui.Button(u8"Очистить. ##15", imgui.ImVec2(90, 0)) then
 				log_onscene["player_15"].id = nil
 				controlOnscene()
@@ -1982,6 +2274,7 @@ function imgui.OnDrawFrame()
 				log_onscene["player_16"].id = nil
 				controlOnscene()
 			end 	
+			imgui.SameLine()
 			if imgui.Button(u8"Очистить. ##16", imgui.ImVec2(90, 0)) then
 				log_onscene["player_16"].id = nil
 				controlOnscene()
@@ -2022,7 +2315,8 @@ function imgui.OnDrawFrame()
 				sampSendChat("/mute " .. log_onscene["player_17"].id .. " 2500 Оскорбление администрации.")
 				log_onscene["player_17"].id = nil
 				controlOnscene()
-			end 	
+			end 
+			imgui.SameLine()	
 			if imgui.Button(u8"Очистить. ##17", imgui.ImVec2(90, 0)) then
 				log_onscene["player_17"].id = nil
 				controlOnscene()
@@ -2064,6 +2358,7 @@ function imgui.OnDrawFrame()
 				log_onscene["player_18"].id = nil
 				controlOnscene()
 			end		
+			imgui.SameLine()
 			if imgui.Button(u8"Очистить. ##18", imgui.ImVec2(90, 0)) then
 				log_onscene["player_18"].id = nil
 				controlOnscene()
@@ -2105,6 +2400,7 @@ function imgui.OnDrawFrame()
 				log_onscene["player_19"].id = nil
 				controlOnscene()
 			end		
+			imgui.SameLine()
 			if imgui.Button(u8"Очистить. ##19", imgui.ImVec2(90, 0)) then
 				log_onscene["player_19"].id = nil
 				controlOnscene()
@@ -2146,6 +2442,7 @@ function imgui.OnDrawFrame()
 				log_onscene["player_20"].id = nil
 				controlOnscene()
 			end	
+			imgui.SameLine()
 			if imgui.Button(u8"Очистить. ##20", imgui.ImVec2(90, 0)) then
 				log_onscene["player_20"].id = nil
 				controlOnscene()
@@ -2153,5 +2450,223 @@ function imgui.OnDrawFrame()
 		end
 		imgui.Separator()
 		imgui.End()
+	end
+	if i_re_menu.v and control_recon and recon_to_player then
+		imgui.SetNextWindowPos(imgui.ImVec2(sw/2, sh/1.06), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 1))
+		imgui.SetNextWindowSize(imgui.ImVec2(sw/2.44, sh-sh-10), imgui.Cond.FirstUseEver)
+		imgui.Begin(u8"Наказания игрока.", false, 2+4+32)
+			imgui.SetCursorPosX(imgui.GetWindowWidth()/2.43-160)
+			if imgui.Button(u8"Обновить.", imgui.ImVec2(75, 0)) then
+				sampSendClickTextdraw(447)
+			end
+			imgui.SameLine()
+			imgui.SetCursorPosX(imgui.GetWindowWidth()/2.43-80)
+			if imgui.Button(u8"Посадить.", imgui.ImVec2(75, 0)) then
+				jail_or_ban_re = 1
+			end
+			imgui.SameLine()
+			imgui.SetCursorPosX(imgui.GetWindowWidth()/2.41)
+			if imgui.Button(u8"Забанить.", imgui.ImVec2(75, 0)) then
+				jail_or_ban_re = 2
+			end
+			imgui.SameLine()
+			imgui.SetCursorPosX(imgui.GetWindowWidth()/2.43+80)
+			if imgui.Button(u8"Кикнуть.", imgui.ImVec2(75, 0)) then
+				jail_or_ban_re = 3
+			end
+			imgui.SameLine()
+			imgui.SetCursorPosX(imgui.GetWindowWidth()/2.43+160)
+			if imgui.Button(u8"Выйти.", imgui.ImVec2(75, 0)) then
+				sampSendChat("/reoff")
+				control_recon_playerid = -1
+			end
+		imgui.End()
+		imgui.SetNextWindowPos(imgui.ImVec2(sw-10, 10), imgui.Cond.FirstUseEver, imgui.ImVec2(1, 0.5))
+		imgui.SetNextWindowSize(imgui.ImVec2(250, sh/1.15), imgui.Cond.FirstUseEver)
+		imgui.Begin(u8"Информация об игроке.", false, 2+4+32)
+		if accept_load then
+			if not sampIsPlayerConnected(control_recon_playerid) then
+				control_recon_playernick = "-"
+			else
+				control_recon_playernick = sampGetPlayerNickname(control_recon_playerid)
+			end
+			imgui.Text(u8"Игрок: " .. control_recon_playernick .. "[" .. control_recon_playerid .. "]")
+			imgui.Separator()
+			--[[local i = 1
+			while i <= 14 do
+				if i == 3 or i == 4 then
+					if i == 3 and tonumber(player_info[3]) ~= 0 then
+						imgui.Text(u8:encode(text_remenu[i]) .. " " .. player_info[i])
+					end
+					if i == 4 and tonumber(player_info[4]) ~= -1 then
+						imgui.Text(u8:encode(text_remenu[i]) .. " " .. player_info[i])
+					end
+				else
+					imgui.Text(u8:encode(text_remenu[i]) .. " " .. player_info[i])
+				end
+				if i == 3 then
+					if tonumber(player_info[3]) ~= 0 then
+						imgui.BufferingBar(tonumber(player_info[i])/100, imgui.ImVec2(imgui.GetWindowWidth()-10, 10), false)
+					end
+				end
+				if i == 2 then
+					imgui.BufferingBar(tonumber(player_info[i])/100, imgui.ImVec2(imgui.GetWindowWidth()-10, 10), false)
+				end
+				if i == 4 and tonumber(player_info[4]) ~= -1 then
+					imgui.BufferingBar(tonumber(player_info[4])/1000, imgui.ImVec2(imgui.GetWindowWidth()-10, 10), false)
+				end
+				if i == 5 then
+					local speed, const = string.match(player_info[5], "(%d+) / (%d+)")
+					if tonumber(speed) > tonumber(const) then
+						speed = const
+					end
+					imgui.BufferingBar((tonumber(speed)*100/tonumber(const))/100, imgui.ImVec2(imgui.GetWindowWidth()-10, 10), false)
+				end
+			i = i + 1
+			end]]
+			for key, v in pairs(player_info) do
+				if key == 2 then
+					imgui.Text(u8:encode(text_remenu[2]) .. " " .. player_info[2])
+					imgui.BufferingBar(tonumber(player_info[2])/100, imgui.ImVec2(imgui.GetWindowWidth()-10, 10), false)
+				end
+				if key == 3 and tonumber(player_info[3]) ~= 0 then
+					imgui.Text(u8:encode(text_remenu[3]) .. " " .. player_info[3])
+					imgui.BufferingBar(tonumber(player_info[3])/100, imgui.ImVec2(imgui.GetWindowWidth()-10, 10), false)
+				end
+				if key == 4 and tonumber(player_info[4]) ~= -1 then
+					imgui.Text(u8:encode(text_remenu[4]) .. " " .. player_info[4])
+					imgui.BufferingBar(tonumber(player_info[4])/1000, imgui.ImVec2(imgui.GetWindowWidth()-10, 10), false)
+				end
+				if key == 5 then
+					imgui.Text(u8:encode(text_remenu[5]) .. " " .. player_info[5])
+					local speed, const = string.match(player_info[5], "(%d+) / (%d+)")
+					if tonumber(speed) > tonumber(const) then
+						speed = const
+					end
+					imgui.BufferingBar((tonumber(speed)*100/tonumber(const))/100, imgui.ImVec2(imgui.GetWindowWidth()-10, 10), false)
+				end
+				if key ~= 2 and key ~= 3 and key ~= 4 and key ~= 5 then
+					imgui.Text(u8:encode(text_remenu[key]) .. " " .. player_info[key])
+				end
+			end
+			--[[imgui.Text(u8:encode(text_remenu[1]) .. " " .. player_info[1])
+			imgui.Text(u8:encode(text_remenu[2]) .. " " .. player_info[2])
+			imgui.BufferingBar(tonumber(player_info[2])/100, imgui.ImVec2(imgui.GetWindowWidth()-10, 10), false)
+			if tonumber(player_info[3]) ~= 0 then
+				imgui.Text(u8:encode(text_remenu[3]) .. " " .. player_info[3])
+			end
+			if tonumber(player_info[3]) ~= 0 then
+				imgui.BufferingBar(tonumber(player_info[3])/100, imgui.ImVec2(imgui.GetWindowWidth()-10, 10), false)
+			end
+			if tonumber(player_info[4]) ~= -1 then
+				imgui.Text(u8:encode(text_remenu[4]) .. " " .. player_info[4])
+				imgui.BufferingBar(tonumber(player_info[4])/1000, imgui.ImVec2(imgui.GetWindowWidth()-10, 10), false)
+			end
+			imgui.Text(u8:encode(text_remenu[5]) .. " " .. player_info[5])
+			local speed, const = string.match(player_info[5], "(%d+) / (%d+)")
+				if tonumber(speed) > tonumber(const) then
+					speed = const
+				end
+			imgui.BufferingBar((tonumber(speed)*100/tonumber(const))/100, imgui.ImVec2(imgui.GetWindowWidth()-10, 10), false)
+			imgui.Text(u8:encode(text_remenu[6]) .. " " .. player_info[6])
+			imgui.Text(u8:encode(text_remenu[7]) .. " " .. player_info[7])
+			imgui.Text(u8:encode(text_remenu[8]) .. " " .. player_info[8])
+			imgui.Text(u8:encode(text_remenu[9]) .. " " .. player_info[9])
+			imgui.Text(u8:encode(text_remenu[10]) .. " " .. player_info[10])
+			imgui.Text(u8:encode(text_remenu[11]) .. " " .. player_info[11])
+			imgui.Text(u8:encode(text_remenu[12]) .. " " .. player_info[12])
+			imgui.Text(u8:encode(text_remenu[13]) .. " " .. player_info[13])
+			imgui.Text(u8:encode(text_remenu[14]) .. " " .. player_info[14])
+			imgui.Text(u8:encode(text_remenu[15]) .. " " .. player_info[15])]]
+			imgui.Separator()
+			if imgui.Button("WallHack", imgui.ImVec2(-0.1, 0)) then
+				if control_wallhack then
+					nameTagOff()
+					control_wallhack = false
+				else
+					nameTagOn()
+					control_wallhack = true
+				end
+			end
+			imgui.Separator()
+			imgui.Text(u8"Игроки рядом:")
+			local playerid_to_stream = playersToStreamZone()
+			for _, v in pairs(playerid_to_stream) do
+				if imgui.Button(" - " .. sampGetPlayerNickname(v) .. "[" .. v .. "] - ", imgui.ImVec2(-0.1, 0)) then
+					sampSendChat("/re " .. v)
+				end
+			end
+			imgui.Separator()
+			imgui.Text(u8"Что бы убрать курсор для\n осмотра камерой: Зажмите ПКМ.")
+		else
+			imgui.SetCursorPosX(imgui.GetWindowWidth()/2.3)
+			imgui.SetCursorPosY(imgui.GetWindowHeight()/2.3)
+			imgui.Spinner(20, 7)
+		end
+		imgui.End()
+		if jail_or_ban_re > 0 then
+			imgui.SetNextWindowPos(imgui.ImVec2(10, 10), imgui.Cond.FirstUseEver, imgui.ImVec2(1, 0.5))
+			imgui.SetNextWindowSize(imgui.ImVec2(250, sh/1.15), imgui.Cond.FirstUseEver)
+			imgui.Begin(u8"Наказания игрока. ##Nak", false, 2+4+32)
+			if jail_or_ban_re == 1 then
+				if imgui.Button("Speed Hack", imgui.ImVec2(-0.1, 0)) then
+					sampSendChat("/jail " .. control_recon_playerid .. " 900 Использование запрещенного софта. (Speed Hack)")
+				end
+				if imgui.Button("Fly", imgui.ImVec2(-0.1, 0)) then
+					sampSendChat("/jail " .. control_recon_playerid .. " 900 Использование запрещенного софта. (Fly)")
+				end
+				if imgui.Button("Fly Car", imgui.ImVec2(-0.1, 0)) then
+					sampSendChat("/jail " .. control_recon_playerid .. " 900 Использование запрещенного софта. (Fly Car)")
+				end
+				if imgui.Button(u8"Помеха MP", imgui.ImVec2(-0.1, 0)) then
+					sampSendChat("/jail " .. control_recon_playerid .. " 300 Помеха мероприятию.")
+				end
+				if imgui.Button("Spawn Kill", imgui.ImVec2(-0.1, 0)) then
+					sampSendChat("/jail " .. control_recon_playerid .. " 300 Spawn Kill")
+				end
+				if imgui.Button(u8"Назад. ##1", imgui.ImVec2(-0.1, 0)) then
+					jail_or_ban_re = 0
+				end
+			elseif jail_or_ban_re == 2 then
+				if imgui.Button("S0beit", imgui.ImVec2(-0.1, 0)) then
+					sampSendChat("/ban " .. control_recon_playerid .. " 7 Использование запрещенного софта. (S0beit)")
+				end
+				if imgui.Button("Aim", imgui.ImVec2(-0.1, 0)) then
+					sampSendChat("/iban " .. control_recon_playerid .. " 7 Использование запрещенного софта. (Aim)")
+				end
+				if imgui.Button("Auto +C", imgui.ImVec2(-0.1, 0)) then
+					sampSendChat("/iban " .. control_recon_playerid .. " 7 Использование запрещенного софта. (Auto +C)")
+				end
+				if imgui.Button("Rvanka", imgui.ImVec2(-0.1, 0)) then
+					sampSendChat("/iban " .. control_recon_playerid .. " 7 Использование запрещенного софта. (Rvanka)")
+				end
+				if imgui.Button("Car Shot", imgui.ImVec2(-0.1, 0)) then
+					sampSendChat("/iban " .. control_recon_playerid .. " 7 Использование запрещенного софта. (Car Shot)")
+				end
+				if imgui.Button("Cheat", imgui.ImVec2(-0.1, 0)) then
+					sampSendChat("/iban " .. control_recon_playerid .. " 7 Использование запрещенного софта.")
+				end
+				if imgui.Button(u8"Неадекватное поведение.", imgui.ImVec2(-0.1, 0)) then
+					sampSendChat("/iban " .. control_recon_playerid .. " 3 Неадекватное поведение.")
+				end
+				if imgui.Button("Nick 3/3", imgui.ImVec2(-0.1, 0)) then
+					sampSendChat("/ban " .. control_recon_playerid .. " 3 Nick 3/3")
+				end
+				if imgui.Button(u8"Назад. ##2", imgui.ImVec2(-0.1, 0)) then
+					jail_or_ban_re = 0
+				end
+			elseif jail_or_ban_re == 3 then
+				if imgui.Button("Nick 1/3", imgui.ImVec2(-0.1, 0)) then
+					sampSendChat("/kick " .. control_recon_playerid .. " Nick 1/3")
+				end
+				if imgui.Button("Nick 2/3", imgui.ImVec2(-0.1, 0)) then
+					sampSendChat("/kick " .. control_recon_playerid .. " Nick 2/3")
+				end
+				if imgui.Button(u8"Назад. ##3", imgui.ImVec2(-0.1, 0)) then
+					jail_or_ban_re = 0
+				end
+			end
+			imgui.End()
+		end
 	end
 end

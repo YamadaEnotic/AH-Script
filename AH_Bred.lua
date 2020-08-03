@@ -16,6 +16,7 @@ local encoding							= require "encoding"
 local vkeys								= require "lib.vkeys"
 local inicfg							= require "inicfg"
 local notfy								= import 'lib/lib_imgui_notf.lua'
+--local sc_board							= import 'lib/scoreboard.lua'
 --local pie								= require "imgui_piemenu"
 --local theme								= import "Module/imgui_themes.lua"
 encoding.default 						= "CP1251"
@@ -100,8 +101,8 @@ apply_custom_style()
 
 -- [x] -- Переменные. -- [x] --
 update_state = false
-local script_version = 4
-local script_version_text = "2.0"
+local script_version = 5
+local script_version_text = "2.1"
 local update_url = "https://raw.githubusercontent.com/YamadaEnotic/AH-Script/master/update.ini"
 local update_path = getWorkingDirectory() .. '/update.ini'
 local script_url = "https://raw.githubusercontent.com/YamadaEnotic/AH-Script/master/AH_Bred.lua"
@@ -142,17 +143,7 @@ local punishments = {
 		time = 7,
 		reason = "Использование запрещенного софта."
 	},
-	["ср"] = {
-		cmd = "ban",
-		time = 7,
-		reason = "Использование запрещенного софта."
-	},
 	["sob"] = {
-		cmd = "ban",
-		time = 7,
-		reason = "Использование запрещенного софта. (S0beit)"
-	},
-	["ыщи"] = {
 		cmd = "ban",
 		time = 7,
 		reason = "Использование запрещенного софта. (S0beit)"
@@ -162,25 +153,10 @@ local punishments = {
 		time = 7,
 		reason = "Использование запрещенного софта. (Aim)"
 	},
-	["фшь"] = {
-		cmd = "ban",
-		time = 7,
-		reason = "Использование запрещенного софта. (Aim)"
-	},
 	["rvn"] = {
 		cmd = "ban",
 		time = 7,
 		reason = "Использование запрещенного софта. (Rvanka)"
-	},
-	["кмт"] = {
-		cmd = "ban",
-		time = 7,
-		reason = "Использование запрещенного софта. (Rvanka)"
-	},
-	["сфкы"] = {
-		cmd = "ban",
-		time = 7,
-		reason = "Использование запрещенного софта. (Car Shot)"
 	},
 	["cars"] = {
 		cmd = "ban",
@@ -192,38 +168,48 @@ local punishments = {
 		time = 7,
 		reason = "Использование запрещенного софта. (Auto +C)"
 	},
-	["фс"] = {
-		cmd = "ban",
+	["ich"] = {
+		cmd = "iban",
+		time = 7,
+		reason = "Использование запрещенного софта."
+	},
+	["isob"] = {
+		cmd = "iban",
+		time = 7,
+		reason = "Использование запрещенного софта. (S0beit)"
+	},
+	["iaim"] = {
+		cmd = "iban",
+		time = 7,
+		reason = "Использование запрещенного софта. (Aim)"
+	},
+	["irvn"] = {
+		cmd = "iban",
+		time = 7,
+		reason = "Использование запрещенного софта. (Rvanka)"
+	},
+	["icars"] = {
+		cmd = "iban",
+		time = 7,
+		reason = "Использование запрещенного софта. (Car Shot)"
+	},
+	["iac"] = {
+		cmd = "iban",
 		time = 7,
 		reason = "Использование запрещенного софта. (Auto +C)"
 	},
-	["ыщи"] = {
+	["bn"] = {
 		cmd = "ban",
-		time = 7,
-		reason = "Использование запрещенного софта. (S0beit)"
-	},
-	["ыщи"] = {
-		cmd = "ban",
-		time = 7,
-		reason = "Использование запрещенного софта. (S0beit)"
+		time = 3,
+		reason = "Неадекватное поведение."
 	},
 	-- [x] -- Муты -- [x] --
 	["osk"] = {
 		cmd = "mute",
 		time = 400,
-		reason = "Оскорбление игрока."
-	},
-	["щыл"] = {
-		cmd = "mute",
-		time = 400,
-		reason = "Оскорбление игрока."
+		reason = "Оскорбление/Унижение игрока(-ов)."
 	},
 	["mat"] = {
-		cmd = "mute",
-		time = 300,
-		reason = "Нецензурная лексика."
-	},
-	["ьфе"] = {
 		cmd = "mute",
 		time = 300,
 		reason = "Нецензурная лексика."
@@ -233,27 +219,12 @@ local punishments = {
 		time = 5000,
 		reason = "Уопминание родителей."
 	},
-	["щк"] = {
-		cmd = "mute",
-		time = 5000,
-		reason = "Упоминание родителей."
-	},
 	["oa"] = {
 		cmd = "mute",
 		time = 2500,
-		reason = "Оскорбление администрации."
-	},
-	["щф"] = {
-		cmd = "mute",
-		time = 2500,
-		reason = "Оскорбление администрации."
+		reason = "Оскорбление/Унижение администрации."
 	},
 	["ua"] = {
-		cmd = "mute",
-		time = 2500,
-		reason = "Унижение прав администрации."
-	},
-	["гф"] = {
 		cmd = "mute",
 		time = 2500,
 		reason = "Унижение прав администрации."
@@ -263,17 +234,7 @@ local punishments = {
 		time = 2500,
 		reason = "Выдача себя за администрацию."
 	},
-	["мф"] = {
-		cmd = "mute",
-		time = 2500,
-		reason = "Выдача себя за администрацию."
-	},
 	["fld"] = {
-		cmd = "mute",
-		time = 120,
-		reason = "Флуд в чат/pm."
-	},
-	["адв"] = {
 		cmd = "mute",
 		time = 120,
 		reason = "Флуд в чат/pm."
@@ -283,37 +244,12 @@ local punishments = {
 		time = 120,
 		reason = "Попрошайничество."
 	},
-	["зщзк"] = {
-		cmd = "mute",
-		time = 120,
-		reason = "Попрошайничество."
-	},
 	["nead"] = {
 		cmd = "mute",
 		time = 600,
 		reason = "Неадекватное поведение."
 	},
-	["туфв"] = {
-		cmd = "mute",
-		time = 600,
-		reason = "Неадекватное поведение."
-	},
 	["rek"] = {
-		cmd = "mute",
-		time = 600,
-		reason = "Реклама сторонних ресурсов/сервера/сайта."
-	},
-	["кул"] = {
-		cmd = "mute",
-		time = 600,
-		reason = "Реклама сторонних ресурсов/сервера/сайта."
-	},
-	["rek"] = {
-		cmd = "mute",
-		time = 600,
-		reason = "Реклама сторонних ресурсов/сервера/сайта."
-	},
-	["кул"] = {
 		cmd = "mute",
 		time = 600,
 		reason = "Реклама сторонних ресурсов/сервера/сайта."
@@ -323,27 +259,12 @@ local punishments = {
 		time = 400,
 		reason = "Оскорбление игрока в /report."
 	},
-	["кщыл"] = {
-		cmd = "rmute",
-		time = 400,
-		reason = "Оскорбление игрока в /report."
-	},
 	["rmat"] = {
 		cmd = "rmute",
 		time = 400,
 		reason = "Мат в /report."
 	},
-	["кьфе"] = {
-		cmd = "rmute",
-		time = 400,
-		reason = "Мат в /report."
-	},
-	["raosk"] = {
-		cmd = "rmute",
-		time = 400,
-		reason = "Оскорбление администрации в /report."
-	},
-	["кфщыл"] = {
+	["rao"] = {
 		cmd = "rmute",
 		time = 400,
 		reason = "Оскорбление администрации в /report."
@@ -353,18 +274,53 @@ local punishments = {
 		time = 120,
 		reason = "/report не по назначению. (Offtop)"
 	},
-	["щещз"] = {
+	["rcp"] = {
 		cmd = "rmute",
 		time = 120,
-		reason = "/report не по назначению. (Offtop)"
+		reason = "Сообщение в /report CAPS'ом"
 	},
 	-- [x] -- Джайлы -- [x] --
-	["sh"] = {
+	["cdm"] = {
+		cmd = "jail",
+		time = 300,
+		reason = "Нанесение урона машиной в Зеленой зоне. (DB in ZZ)"
+	},
+	["pk"] = {
 		cmd = "jail",
 		time = 900,
-		reason = "Использование запрещенного софта. (SpeedHack)"
+		reason = "Использование запрещенного софта. (Parkour Mod)"
 	},
-	["ыр"] = {
+	["ca"] = {
+		cmd = "jail",
+		time = 900,
+		reason = "Использование запрещенного софта. (CLEO Animations)"
+	},
+	["np"] = {
+		cmd = "jail",
+		time = 300,
+		reason = "Нарушение правил сервера."
+	},
+	["zv"] = {
+		cmd = "jail",
+		time = 3000,
+		reason = "Злоупотребление VIP привилегией."
+	},
+	["dbp"] = {
+		cmd = "jail",
+		time = 300,
+		reason = "Помеха игроку. (DB in passive)"
+	},
+	["bg"] = {
+		cmd = "jail",
+		time = 300,
+		reason = "Исполтьзование запрещенных эксплойтов. (Bag Use)"
+	},
+	["dm"] = {
+		cmd = "jail",
+		time = 300,
+		reason = "Нанесение урона в Зеленой зоне. (DM in ZZ)"
+	},
+	["sh"] = {
 		cmd = "jail",
 		time = 900,
 		reason = "Использование запрещенного софта. (SpeedHack)"
@@ -374,17 +330,7 @@ local punishments = {
 		time = 900,
 		reason = "Использование запрещенного софта. (Fly)"
 	},
-	["адн"] = {
-		cmd = "jail",
-		time = 900,
-		reason = "Использование запрещенного софта. (Fly)"
-	},
 	["fcar"] = {
-		cmd = "jail",
-		time = 900,
-		reason = "Использование запрещенного софта. (FlyCar)"
-	},
-	["асфк"] = {
 		cmd = "jail",
 		time = 900,
 		reason = "Использование запрещенного софта. (FlyCar)"
@@ -394,22 +340,15 @@ local punishments = {
 		time = 300,
 		reason = "Помеха мероприятию."
 	},
-	["зьз"] = {
-		cmd = "jail",
-		time = 300,
-		reason = "Помеха мероплиятию."
-	},
 	["sk"] = {
-		cmd = "jail",
-		time = 300,
-		reason = "Убийство игроков на спавне."
-	},
-	["ыл"] = {
 		cmd = "jail",
 		time = 300,
 		reason = "Убийство игроков на спавне."
 	}
 }
+local cmd_punis_jail = { "cdm" , "pk" , "ca" , "np" , "zv" , "dbp" , "bg" , "dm" , "sh", "fly", "fcar", "pmp", "sk"}
+local cmd_punis_mute = { "osk" , "mat" , "or" , "oa" , "ua" , "va" , "fld" , "popr" , "nead" , "rek" , "rosk" , "rmat" , "rao" , "otop" , "rcp" }
+local cmd_punis_ban = { "ch" , "sob" , "aim" , "rvn" , "cars" , "ac" , "ich" , "isob" , "iaim" , "irvn" , "icars" , "iac" , "bn" } 
 local i_ans = {
 	u8'/givemoney ID Сумма.',
 	u8'/givescore ID Сумма (От Diamond VIP).',
@@ -742,6 +681,9 @@ local log_onscene = {
 		suspicion = " "
 	}
 }
+local russian_characters = {
+    [168] = 'Ё', [184] = 'ё', [192] = 'А', [193] = 'Б', [194] = 'В', [195] = 'Г', [196] = 'Д', [197] = 'Е', [198] = 'Ж', [199] = 'З', [200] = 'И', [201] = 'Й', [202] = 'К', [203] = 'Л', [204] = 'М', [205] = 'Н', [206] = 'О', [207] = 'П', [208] = 'Р', [209] = 'С', [210] = 'Т', [211] = 'У', [212] = 'Ф', [213] = 'Х', [214] = 'Ц', [215] = 'Ч', [216] = 'Ш', [217] = 'Щ', [218] = 'Ъ', [219] = 'Ы', [220] = 'Ь', [221] = 'Э', [222] = 'Ю', [223] = 'Я', [224] = 'а', [225] = 'б', [226] = 'в', [227] = 'г', [228] = 'д', [229] = 'е', [230] = 'ж', [231] = 'з', [232] = 'и', [233] = 'й', [234] = 'к', [235] = 'л', [236] = 'м', [237] = 'н', [238] = 'о', [239] = 'п', [240] = 'р', [241] = 'с', [242] = 'т', [243] = 'у', [244] = 'ф', [245] = 'х', [246] = 'ц', [247] = 'ч', [248] = 'ш', [249] = 'щ', [250] = 'ъ', [251] = 'ы', [252] = 'ь', [253] = 'э', [254] = 'ю', [255] = 'я',
+}
 local date_onscene = {}
 local text_remenu = { "Очки:", "Здоровье:", "Броня:", "ХП машины:", "Скорость:", "Ping:", "Патроны:", "Выстрелы:", "Время выстрелов:", "Время АФК:", "P.Loss:", "VIP:", "Passive Мод:", "Turbo:", "Коллизия:" }
 local player_info = {}
@@ -757,6 +699,9 @@ local check_mouse = false
 local check_cmd_re = false
 local control_wallhack = false
 local jail_or_ban_re
+local check_cmd_punis = nil
+local right_re_menu = true
+local mouse_cursor = true
 
 -- [x] -- ImGUI переменные. -- [x] --
 local i_ans_window = imgui.ImBool(false)
@@ -764,6 +709,7 @@ local i_setting_items = imgui.ImBool(false)
 local i_back_prefix = imgui.ImBool(false)
 local i_log_onscene = imgui.ImBool(false)
 local i_re_menu = imgui.ImBool(false)
+local i_cmd_helper = imgui.ImBool(false)
 local font_size_ac = imgui.ImBuffer(16)
 local logo_image
 local setting_items = {
@@ -854,7 +800,7 @@ function main()
 		if isKeyJustPressed(VK_X) and (sampIsChatInputActive() == false) and (sampIsDialogActive() == false) then
 			setting_items.Admin_chat.v = not setting_items.Admin_chat.v
 		end
-		if not i_setting_items.v and not i_ans_window.v and not i_log_onscene.v and not i_re_menu.v then
+		if not i_setting_items.v and not i_ans_window.v and not i_log_onscene.v and not i_re_menu.v and not i_cmd_helper.v then
 			imgui.Process = false
 		end
 		if sampGetCurrentDialogId() == 2351 and setting_items.Fast_ans.v and sampIsDialogActive() then
@@ -867,14 +813,33 @@ function main()
 			i_log_onscene.v = not i_log_onscene.v
 			imgui.Process = true
 		end
-		if isKeyDown(VK_RBUTTON) and (sampIsChatInputActive() == false) and (sampIsDialogActive() == false) and control_recon and recon_to_player then
-			check_mouse = false
-		else
-			check_mouse = true		
+		if isKeyJustPressed(VK_RBUTTON) and (sampIsChatInputActive() == false) and (sampIsDialogActive() == false) and control_recon and recon_to_player then
+			check_mouse = not check_mouse
+		end
+		if isKeyJustPressed(VK_C) and (sampIsChatInputActive() == false) and (sampIsDialogActive() == false) and control_recon and recon_to_player then
+			right_re_menu = not right_re_menu	
+		end
+		if isKeyDown(VK_CONTROL) and isKeyDown(VK_H) and isKeyJustPressed(VK_I) and (sampIsDialogActive() == false) then
+			sampSendChat("/a hi")	
 		end
 		if not sampIsPlayerConnected(control_recon_playerid) then
 			i_re_menu.v = false
 			control_recon_playerid = -1
+		end
+		if sampIsChatInputActive() then
+			if sampGetChatInputText():find("-") == 1 then
+				i_cmd_helper.v = true
+				imgui.Process = true
+				if sampGetChatInputText():match("-(.+)") ~= nil then
+					check_cmd_punis = sampGetChatInputText():match("-(.+)")
+				else
+					check_cmd_punis = nil
+				end
+			else
+				i_cmd_helper.v = false
+			end
+		else
+			i_cmd_helper.v = false
 		end
 		wait(0)
 	end
@@ -960,11 +925,74 @@ end
 function sampev.onSendChat(message)
 	-- [x] -- Захват строки для дальнейшей обработки. -- [x] --
 	if setting_items.Punishments.v then
-		local checkstr, id = string.match(message, "-(.+) (.+)")
-		if punishments[checkstr] == nil then return true end
-		sampSendChat("/" .. punishments[checkstr].cmd .. " " .. id .. " " .. punishments[checkstr].time .. " " .. punishments[checkstr].reason)
-		return false
+		if string.match(message, "-(.+) (.+)") == nil then
+			if string.match(message, "-(.+)") ~= nil then
+				local checkstr = string.match(message, "-(.+)")
+				if punishments[checkstr] ~= nil or punishments[string.lower(RusToEng(checkstr))] ~= nil then
+					if punishments[checkstr] == nil then
+						sampAddChatMessage(tag .. "Используйте: -" .. string.lower(RusToEng(checkstr)) .. " [ИД игрока] (Множител наказания)")
+						return false
+					else
+						sampAddChatMessage(tag .. "Используйте: -" .. checkstr .. " [ИД игрока] (Множител наказания)")
+						return false
+					end
+				else
+					return true
+				end
+			end
+			return true
+		else
+			if string.match(message, "-(.+) (.+) (.+)") == nil and string.match(message, "-(.+) (.+)") ~= nil then
+				local checkstr, id = string.match(message, "-(.+) (.+)")
+				if punishments[checkstr] ~= nil then
+					--if string.match(id, "(.+) (.+)") == nil then
+						sampSendChat("/" .. punishments[checkstr].cmd .. " " .. id .. " " .. punishments[checkstr].time .. " " .. punishments[checkstr].reason)
+						return false
+					--[[else
+						local pid, mno = string.match(id, "(.+) (.+)")
+						sampSendChat("/" .. punishments[checkstr].cmd .. " " .. id .. " " .. tonumber(punishments[checkstr].time)*tonumber(mno) .. " " .. punishments[checkstr].reason .. " x" .. mno)
+						return false
+					end]]
+				elseif punishments[string.lower(RusToEng(checkstr))] ~= nil then
+					checkstr = string.lower(RusToEng(checkstr))
+					--if string.match(id, "(.+) (.+)") == nil then
+						sampSendChat("/" .. punishments[checkstr].cmd .. " " .. id .. " " .. punishments[checkstr].time .. " " .. punishments[checkstr].reason)
+						return false
+					--[[else
+						local pid, mno = string.match(id, "(.+) (.+)")
+						sampSendChat("/" .. punishments[checkstr].cmd .. " " .. id .. " " .. tonumber(punishments[checkstr].time)*tonumber(mno) .. " " .. punishments[checkstr].reason .. " x" .. mno)
+						return false
+					end]]
+				else
+					return true
+				end
+			elseif string.match(message, "-(.+) (.+) (.+)") ~= nil then
+				local checkstr, id, mno = string.match(message, "-(.+) (.+) (.+)")
+				if punishments[checkstr] ~= nil then
+					sampSendChat("/" .. punishments[checkstr].cmd .. " " .. id .. " " .. tonumber(punishments[checkstr].time)*tonumber(mno) .. " " .. punishments[checkstr].reason .. " x" .. mno)
+					return false
+				elseif punishments[string.lower(RusToEng(checkstr))] ~= nil then
+					checkstr = string.lower(RusToEng(checkstr))
+					sampSendChat("/" .. punishments[checkstr].cmd .. " " .. id .. " " .. tonumber(punishments[checkstr].time)*tonumber(mno) .. " " .. punishments[checkstr].reason .. " x" .. mno)
+					return false
+				else
+					return true
+				end
+			end
+		end
 	end
+end
+function RusToEng(text)
+    result = text == '' and nil or ''
+    if result then
+        for i = 0, #text do
+            letter = string.sub(text, i, i)
+            if letter then
+                result = (letter:find('[А-Я/{/}/</>]') and string.upper(translate[string.rlower(letter)]) or letter:find('[а-я/,]') and translate[letter] or letter)..result
+            end
+        end
+    end
+    return result and result:reverse() or result
 end
 function sampev.onServerMessage(color, text)
 	local check_string = string.match(text, "[^%s]+")
@@ -1021,6 +1049,7 @@ function sampev.onServerMessage(color, text)
 					end
 					i = i + 1;
 				end
+				break
 			end
 		end
 		return true
@@ -1217,6 +1246,42 @@ function textSplit(str, delim, plain)
         pos = epos and epos + 1
     until not pos
     return tokens
+end
+function string.rlower(s)
+    s = s:lower()
+    local strlen = s:len()
+    if strlen == 0 then return s end
+    s = s:lower()
+    local output = ''
+    for i = 1, strlen do
+        local ch = s:byte(i)
+        if ch >= 192 and ch <= 223 then -- upper russian characters
+            output = output .. russian_characters[ch + 32]
+        elseif ch == 168 then -- Ё
+            output = output .. russian_characters[184]
+        else
+            output = output .. string.char(ch)
+        end
+    end
+    return output
+end
+function string.rupper(s)
+    s = s:upper()
+    local strlen = s:len()
+    if strlen == 0 then return s end
+    s = s:upper()
+    local output = ''
+    for i = 1, strlen do
+        local ch = s:byte(i)
+        if ch >= 224 and ch <= 255 then -- lower russian characters
+            output = output .. russian_characters[ch - 32]
+        elseif ch == 184 then -- ё
+            output = output .. russian_characters[168]
+        else
+            output = output .. string.char(ch)
+        end
+    end
+    return output
 end
 
 -- [x] -- ImGUI тело. -- [x] --
@@ -1541,10 +1606,10 @@ function imgui.OnDrawFrame()
 		imgui.SameLine()
 		imgui.SetCursorPosX(imgui.GetWindowWidth() - 35)
 		imgui.ToggleButton("##7", setting_items.Chat_Logger)
-		--[[imgui.Text(u8"Сокращенные команды наказаний.")
+		imgui.Text(u8"Сокращенные команды наказаний.")
 		imgui.SameLine()
 		imgui.SetCursorPosX(imgui.GetWindowWidth() - 35)
-		imgui.ToggleButton("##3", setting_items.Punishments)]]
+		imgui.ToggleButton("##3", setting_items.Punishments)
 		imgui.Text(u8"Админ чат.")
 		imgui.SameLine()
 		imgui.SetCursorPosX(imgui.GetWindowWidth() - 35)
@@ -2483,127 +2548,129 @@ function imgui.OnDrawFrame()
 		imgui.End()
 		imgui.SetNextWindowPos(imgui.ImVec2(sw-10, 10), imgui.Cond.FirstUseEver, imgui.ImVec2(1, 0.5))
 		imgui.SetNextWindowSize(imgui.ImVec2(250, sh/1.15), imgui.Cond.FirstUseEver)
-		imgui.Begin(u8"Информация об игроке.", false, 2+4+32)
-		if accept_load then
-			if not sampIsPlayerConnected(control_recon_playerid) then
-				control_recon_playernick = "-"
-			else
-				control_recon_playernick = sampGetPlayerNickname(control_recon_playerid)
-			end
-			imgui.Text(u8"Игрок: " .. control_recon_playernick .. "[" .. control_recon_playerid .. "]")
-			imgui.Separator()
-			--[[local i = 1
-			while i <= 14 do
-				if i == 3 or i == 4 then
-					if i == 3 and tonumber(player_info[3]) ~= 0 then
-						imgui.Text(u8:encode(text_remenu[i]) .. " " .. player_info[i])
-					end
-					if i == 4 and tonumber(player_info[4]) ~= -1 then
-						imgui.Text(u8:encode(text_remenu[i]) .. " " .. player_info[i])
-					end
+		if right_re_menu then
+			imgui.Begin(u8"Информация об игроке.", false, 2+4+32)
+			if accept_load then
+				if not sampIsPlayerConnected(control_recon_playerid) then
+					control_recon_playernick = "-"
 				else
-					imgui.Text(u8:encode(text_remenu[i]) .. " " .. player_info[i])
+					control_recon_playernick = sampGetPlayerNickname(control_recon_playerid)
 				end
-				if i == 3 then
-					if tonumber(player_info[3]) ~= 0 then
+				imgui.Text(u8"Игрок: " .. control_recon_playernick .. "[" .. control_recon_playerid .. "]")
+				imgui.Separator()
+				--[[local i = 1
+				while i <= 14 do
+					if i == 3 or i == 4 then
+						if i == 3 and tonumber(player_info[3]) ~= 0 then
+							imgui.Text(u8:encode(text_remenu[i]) .. " " .. player_info[i])
+						end
+						if i == 4 and tonumber(player_info[4]) ~= -1 then
+							imgui.Text(u8:encode(text_remenu[i]) .. " " .. player_info[i])
+						end
+					else
+						imgui.Text(u8:encode(text_remenu[i]) .. " " .. player_info[i])
+					end
+					if i == 3 then
+						if tonumber(player_info[3]) ~= 0 then
+							imgui.BufferingBar(tonumber(player_info[i])/100, imgui.ImVec2(imgui.GetWindowWidth()-10, 10), false)
+						end
+					end
+					if i == 2 then
 						imgui.BufferingBar(tonumber(player_info[i])/100, imgui.ImVec2(imgui.GetWindowWidth()-10, 10), false)
 					end
-				end
-				if i == 2 then
-					imgui.BufferingBar(tonumber(player_info[i])/100, imgui.ImVec2(imgui.GetWindowWidth()-10, 10), false)
-				end
-				if i == 4 and tonumber(player_info[4]) ~= -1 then
-					imgui.BufferingBar(tonumber(player_info[4])/1000, imgui.ImVec2(imgui.GetWindowWidth()-10, 10), false)
-				end
-				if i == 5 then
-					local speed, const = string.match(player_info[5], "(%d+) / (%d+)")
-					if tonumber(speed) > tonumber(const) then
-						speed = const
+					if i == 4 and tonumber(player_info[4]) ~= -1 then
+						imgui.BufferingBar(tonumber(player_info[4])/1000, imgui.ImVec2(imgui.GetWindowWidth()-10, 10), false)
 					end
-					imgui.BufferingBar((tonumber(speed)*100/tonumber(const))/100, imgui.ImVec2(imgui.GetWindowWidth()-10, 10), false)
+					if i == 5 then
+						local speed, const = string.match(player_info[5], "(%d+) / (%d+)")
+						if tonumber(speed) > tonumber(const) then
+							speed = const
+						end
+						imgui.BufferingBar((tonumber(speed)*100/tonumber(const))/100, imgui.ImVec2(imgui.GetWindowWidth()-10, 10), false)
+					end
+				i = i + 1
+				end]]
+				for key, v in pairs(player_info) do
+					if key == 2 then
+						imgui.Text(u8:encode(text_remenu[2]) .. " " .. player_info[2])
+						imgui.BufferingBar(tonumber(player_info[2])/100, imgui.ImVec2(imgui.GetWindowWidth()-10, 10), false)
+					end
+					if key == 3 and tonumber(player_info[3]) ~= 0 then
+						imgui.Text(u8:encode(text_remenu[3]) .. " " .. player_info[3])
+						imgui.BufferingBar(tonumber(player_info[3])/100, imgui.ImVec2(imgui.GetWindowWidth()-10, 10), false)
+					end
+					if key == 4 and tonumber(player_info[4]) ~= -1 then
+						imgui.Text(u8:encode(text_remenu[4]) .. " " .. player_info[4])
+						imgui.BufferingBar(tonumber(player_info[4])/1000, imgui.ImVec2(imgui.GetWindowWidth()-10, 10), false)
+					end
+					if key == 5 then
+						imgui.Text(u8:encode(text_remenu[5]) .. " " .. player_info[5])
+						local speed, const = string.match(player_info[5], "(%d+) / (%d+)")
+						if tonumber(speed) > tonumber(const) then
+							speed = const
+						end
+						imgui.BufferingBar((tonumber(speed)*100/tonumber(const))/100, imgui.ImVec2(imgui.GetWindowWidth()-10, 10), false)
+					end
+					if key ~= 2 and key ~= 3 and key ~= 4 and key ~= 5 then
+						imgui.Text(u8:encode(text_remenu[key]) .. " " .. player_info[key])
+					end
 				end
-			i = i + 1
-			end]]
-			for key, v in pairs(player_info) do
-				if key == 2 then
-					imgui.Text(u8:encode(text_remenu[2]) .. " " .. player_info[2])
-					imgui.BufferingBar(tonumber(player_info[2])/100, imgui.ImVec2(imgui.GetWindowWidth()-10, 10), false)
-				end
-				if key == 3 and tonumber(player_info[3]) ~= 0 then
+				--[[imgui.Text(u8:encode(text_remenu[1]) .. " " .. player_info[1])
+				imgui.Text(u8:encode(text_remenu[2]) .. " " .. player_info[2])
+				imgui.BufferingBar(tonumber(player_info[2])/100, imgui.ImVec2(imgui.GetWindowWidth()-10, 10), false)
+				if tonumber(player_info[3]) ~= 0 then
 					imgui.Text(u8:encode(text_remenu[3]) .. " " .. player_info[3])
+				end
+				if tonumber(player_info[3]) ~= 0 then
 					imgui.BufferingBar(tonumber(player_info[3])/100, imgui.ImVec2(imgui.GetWindowWidth()-10, 10), false)
 				end
-				if key == 4 and tonumber(player_info[4]) ~= -1 then
+				if tonumber(player_info[4]) ~= -1 then
 					imgui.Text(u8:encode(text_remenu[4]) .. " " .. player_info[4])
 					imgui.BufferingBar(tonumber(player_info[4])/1000, imgui.ImVec2(imgui.GetWindowWidth()-10, 10), false)
 				end
-				if key == 5 then
-					imgui.Text(u8:encode(text_remenu[5]) .. " " .. player_info[5])
-					local speed, const = string.match(player_info[5], "(%d+) / (%d+)")
+				imgui.Text(u8:encode(text_remenu[5]) .. " " .. player_info[5])
+				local speed, const = string.match(player_info[5], "(%d+) / (%d+)")
 					if tonumber(speed) > tonumber(const) then
 						speed = const
 					end
-					imgui.BufferingBar((tonumber(speed)*100/tonumber(const))/100, imgui.ImVec2(imgui.GetWindowWidth()-10, 10), false)
+				imgui.BufferingBar((tonumber(speed)*100/tonumber(const))/100, imgui.ImVec2(imgui.GetWindowWidth()-10, 10), false)
+				imgui.Text(u8:encode(text_remenu[6]) .. " " .. player_info[6])
+				imgui.Text(u8:encode(text_remenu[7]) .. " " .. player_info[7])
+				imgui.Text(u8:encode(text_remenu[8]) .. " " .. player_info[8])
+				imgui.Text(u8:encode(text_remenu[9]) .. " " .. player_info[9])
+				imgui.Text(u8:encode(text_remenu[10]) .. " " .. player_info[10])
+				imgui.Text(u8:encode(text_remenu[11]) .. " " .. player_info[11])
+				imgui.Text(u8:encode(text_remenu[12]) .. " " .. player_info[12])
+				imgui.Text(u8:encode(text_remenu[13]) .. " " .. player_info[13])
+				imgui.Text(u8:encode(text_remenu[14]) .. " " .. player_info[14])
+				imgui.Text(u8:encode(text_remenu[15]) .. " " .. player_info[15])]]
+				imgui.Separator()
+				if imgui.Button("WallHack", imgui.ImVec2(-0.1, 0)) then
+					if control_wallhack then
+						nameTagOff()
+						control_wallhack = false
+					else
+						nameTagOn()
+						control_wallhack = true
+					end
 				end
-				if key ~= 2 and key ~= 3 and key ~= 4 and key ~= 5 then
-					imgui.Text(u8:encode(text_remenu[key]) .. " " .. player_info[key])
+				imgui.Separator()
+				imgui.Text(u8"Игроки рядом:")
+				local playerid_to_stream = playersToStreamZone()
+				for _, v in pairs(playerid_to_stream) do
+					if imgui.Button(" - " .. sampGetPlayerNickname(v) .. "[" .. v .. "] - ", imgui.ImVec2(-0.1, 0)) then
+						sampSendChat("/re " .. v)
+					end
 				end
+				imgui.Separator()
+				imgui.Text(u8"Что бы убрать курсор для\n осмотра камерой: Зажмите ПКМ.")
+			else
+				imgui.SetCursorPosX(imgui.GetWindowWidth()/2.3)
+				imgui.SetCursorPosY(imgui.GetWindowHeight()/2.3)
+				imgui.Spinner(20, 7)
 			end
-			--[[imgui.Text(u8:encode(text_remenu[1]) .. " " .. player_info[1])
-			imgui.Text(u8:encode(text_remenu[2]) .. " " .. player_info[2])
-			imgui.BufferingBar(tonumber(player_info[2])/100, imgui.ImVec2(imgui.GetWindowWidth()-10, 10), false)
-			if tonumber(player_info[3]) ~= 0 then
-				imgui.Text(u8:encode(text_remenu[3]) .. " " .. player_info[3])
-			end
-			if tonumber(player_info[3]) ~= 0 then
-				imgui.BufferingBar(tonumber(player_info[3])/100, imgui.ImVec2(imgui.GetWindowWidth()-10, 10), false)
-			end
-			if tonumber(player_info[4]) ~= -1 then
-				imgui.Text(u8:encode(text_remenu[4]) .. " " .. player_info[4])
-				imgui.BufferingBar(tonumber(player_info[4])/1000, imgui.ImVec2(imgui.GetWindowWidth()-10, 10), false)
-			end
-			imgui.Text(u8:encode(text_remenu[5]) .. " " .. player_info[5])
-			local speed, const = string.match(player_info[5], "(%d+) / (%d+)")
-				if tonumber(speed) > tonumber(const) then
-					speed = const
-				end
-			imgui.BufferingBar((tonumber(speed)*100/tonumber(const))/100, imgui.ImVec2(imgui.GetWindowWidth()-10, 10), false)
-			imgui.Text(u8:encode(text_remenu[6]) .. " " .. player_info[6])
-			imgui.Text(u8:encode(text_remenu[7]) .. " " .. player_info[7])
-			imgui.Text(u8:encode(text_remenu[8]) .. " " .. player_info[8])
-			imgui.Text(u8:encode(text_remenu[9]) .. " " .. player_info[9])
-			imgui.Text(u8:encode(text_remenu[10]) .. " " .. player_info[10])
-			imgui.Text(u8:encode(text_remenu[11]) .. " " .. player_info[11])
-			imgui.Text(u8:encode(text_remenu[12]) .. " " .. player_info[12])
-			imgui.Text(u8:encode(text_remenu[13]) .. " " .. player_info[13])
-			imgui.Text(u8:encode(text_remenu[14]) .. " " .. player_info[14])
-			imgui.Text(u8:encode(text_remenu[15]) .. " " .. player_info[15])]]
-			imgui.Separator()
-			if imgui.Button("WallHack", imgui.ImVec2(-0.1, 0)) then
-				if control_wallhack then
-					nameTagOff()
-					control_wallhack = false
-				else
-					nameTagOn()
-					control_wallhack = true
-				end
-			end
-			imgui.Separator()
-			imgui.Text(u8"Игроки рядом:")
-			local playerid_to_stream = playersToStreamZone()
-			for _, v in pairs(playerid_to_stream) do
-				if imgui.Button(" - " .. sampGetPlayerNickname(v) .. "[" .. v .. "] - ", imgui.ImVec2(-0.1, 0)) then
-					sampSendChat("/re " .. v)
-				end
-			end
-			imgui.Separator()
-			imgui.Text(u8"Что бы убрать курсор для\n осмотра камерой: Зажмите ПКМ.")
-		else
-			imgui.SetCursorPosX(imgui.GetWindowWidth()/2.3)
-			imgui.SetCursorPosY(imgui.GetWindowHeight()/2.3)
-			imgui.Spinner(20, 7)
+			imgui.End()
 		end
-		imgui.End()
 		if jail_or_ban_re > 0 then
 			imgui.SetNextWindowPos(imgui.ImVec2(10, 10), imgui.Cond.FirstUseEver, imgui.ImVec2(1, 0.5))
 			imgui.SetNextWindowSize(imgui.ImVec2(250, sh/1.15), imgui.Cond.FirstUseEver)
@@ -2668,5 +2735,44 @@ function imgui.OnDrawFrame()
 			end
 			imgui.End()
 		end
+	end
+	if i_cmd_helper.v then
+		local in1 = sampGetInputInfoPtr()
+		local in1 = getStructElement(in1, 0x8, 4)
+		local in2 = getStructElement(in1, 0x8, 4)
+		local in3 = getStructElement(in1, 0xC, 4)
+		fib = in3 + 41
+		fib2 = in2 + 10
+		imgui.SetNextWindowPos(imgui.ImVec2(fib2, fib), imgui.Cond.FirstUseEver, imgui.ImVec2(0, -0.1))
+		imgui.SetNextWindowSize(imgui.ImVec2(590, 250), imgui.Cond.FirstUseEver)
+		imgui.Begin(u8"Быстрые команды наказаний.", false, 2+4+32)
+		if check_cmd_punis ~= nil then
+			for key, v in pairs(cmd_punis_mute) do
+				if v:find(string.lower(check_cmd_punis)) ~= nil or v:find(string.lower(RusToEng(check_cmd_punis))) ~= nil or v == string.lower(check_cmd_punis):match("(.+) (.+) ") or v == string.lower(RusToEng(check_cmd_punis)):match("(.+) (.+) ")  or v == string.lower(check_cmd_punis):match("(.+) ") or v == string.lower(RusToEng(check_cmd_punis)):match("(.+) ") then
+					imgui.Text("Mute: -" .. v .. u8" [PlayerID] (Множитель наказания.) - " .. u8:encode(punishments[v].reason))
+				end
+			end
+			for key, v in pairs(cmd_punis_ban) do
+				if v:find(string.lower(check_cmd_punis)) ~= nil or v:find(string.lower(RusToEng(check_cmd_punis))) ~= nil or v == string.lower(check_cmd_punis):match("(.+) (.+) ") or v == string.lower(RusToEng(check_cmd_punis)):match("(.+) (.+) ")  or v == string.lower(check_cmd_punis):match("(.+) ") or v == string.lower(RusToEng(check_cmd_punis)):match("(.+) ") then
+					imgui.Text("Ban: -" .. v .. u8" [PlayerID] - " .. u8:encode(punishments[v].reason))
+				end
+			end
+			for key, v in pairs(cmd_punis_jail) do
+				if v:find(string.lower(check_cmd_punis)) ~= nil or v:find(string.lower(RusToEng(check_cmd_punis))) ~= nil or v == string.lower(check_cmd_punis):match("(.+) (.+) ") or v == string.lower(RusToEng(check_cmd_punis)):match("(.+) (.+) ")  or v == string.lower(check_cmd_punis):match("(.+) ") or v == string.lower(RusToEng(check_cmd_punis)):match("(.+) ") then
+					imgui.Text("Jail: -" .. v .. u8" [PlayerID] - " .. u8:encode(punishments[v].reason))
+				end
+			end
+		else
+			for key, v in pairs(cmd_punis_mute) do
+				imgui.Text("Mute: -" .. v .. u8" [PlayerID] (Множитель наказания.) - " .. u8:encode(punishments[v].reason))
+			end
+			for key, v in pairs(cmd_punis_ban) do
+				imgui.Text("Ban: -" .. v .. u8" [PlayerID] - " .. u8:encode(punishments[v].reason))
+			end
+			for key, v in pairs(cmd_punis_jail) do
+				imgui.Text("Jail: -" .. v .. u8" [PlayerID] - " .. u8:encode(punishments[v].reason))
+			end
+		end
+		imgui.End()
 	end
 end

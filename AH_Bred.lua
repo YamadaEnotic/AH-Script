@@ -101,8 +101,8 @@ apply_custom_style()
 
 -- [x] -- Переменные. -- [x] --
 update_state = false
-local script_version = 5
-local script_version_text = "2.1"
+local script_version = 6
+local script_version_text = "2.2 Bugs Fixed"
 local update_url = "https://raw.githubusercontent.com/YamadaEnotic/AH-Script/master/update.ini"
 local update_path = getWorkingDirectory() .. '/update.ini'
 local script_url = "https://raw.githubusercontent.com/YamadaEnotic/AH-Script/master/AH_Bred.lua"
@@ -123,6 +123,13 @@ local defTable = {
 		Font = 10,
 		Push_Report = false,
 		Chat_Logger = false
+	},
+	keys = {
+		Setting = "End",
+		Re_menu = "None",
+		Hello = "None",
+		P_Log = "None",
+		Hide_AChat = "None"
 	}
 }
 local admin_chat_lines = {
@@ -204,6 +211,11 @@ local punishments = {
 		reason = "Неадекватное поведение."
 	},
 	-- [x] -- Муты -- [x] --
+	["um"] = {
+		cmd = "unmute",
+		time = 0,
+		reason = "Размутить игрока."
+	},
 	["osk"] = {
 		cmd = "mute",
 		time = 400,
@@ -261,12 +273,12 @@ local punishments = {
 	},
 	["rmat"] = {
 		cmd = "rmute",
-		time = 400,
+		time = 300,
 		reason = "Мат в /report."
 	},
 	["rao"] = {
 		cmd = "rmute",
-		time = 400,
+		time = 2500,
 		reason = "Оскорбление администрации в /report."
 	},
 	["otop"] = {
@@ -347,7 +359,7 @@ local punishments = {
 	}
 }
 local cmd_punis_jail = { "cdm" , "pk" , "ca" , "np" , "zv" , "dbp" , "bg" , "dm" , "sh", "fly", "fcar", "pmp", "sk"}
-local cmd_punis_mute = { "osk" , "mat" , "or" , "oa" , "ua" , "va" , "fld" , "popr" , "nead" , "rek" , "rosk" , "rmat" , "rao" , "otop" , "rcp" }
+local cmd_punis_mute = { "osk" , "mat" , "or" , "oa" , "ua" , "va" , "fld" , "popr" , "nead" , "rek" , "rosk" , "rmat" , "rao" , "otop" , "rcp", "um" }
 local cmd_punis_ban = { "ch" , "sob" , "aim" , "rvn" , "cars" , "ac" , "ich" , "isob" , "iaim" , "irvn" , "icars" , "iac" , "bn" } 
 local i_ans = {
 	u8'/givemoney ID Сумма.',
@@ -782,7 +794,7 @@ function main()
 	
 	-- [x] -- Беск. цикл. -- [x] --
 	while true do
-		if isKeyJustPressed(VK_END) and (sampIsChatInputActive() == false) and (sampIsDialogActive() == false) then
+		if isKeysDown(strToIdKeys(config.keys.Setting)) and (sampIsChatInputActive() == false) and (sampIsDialogActive() == false) then
 			i_setting_items.v = not i_setting_items.v
 			imgui.Process = true
 		end
@@ -797,7 +809,7 @@ function main()
 		else
 			i_re_menu.v = false
 		end
-		if isKeyJustPressed(VK_X) and (sampIsChatInputActive() == false) and (sampIsDialogActive() == false) then
+		if isKeysDown(strToIdKeys(config.keys.Hide_AChat)) and (sampIsChatInputActive() == false) and (sampIsDialogActive() == false) then
 			setting_items.Admin_chat.v = not setting_items.Admin_chat.v
 		end
 		if not i_setting_items.v and not i_ans_window.v and not i_log_onscene.v and not i_re_menu.v and not i_cmd_helper.v then
@@ -809,17 +821,20 @@ function main()
 		else 
 			i_ans_window.v = false
 		end
-		if --[[isKeyDown(VK_MENU) and ]]isKeyJustPressed(VK_B) and setting_items.Chat_Logger.v and (sampIsChatInputActive() == false) and (sampIsDialogActive() == false) then
+		if not i_re_menu.v then
+			check_mouse = true
+		end
+		if isKeysDown(strToIdKeys(config.keys.P_Log)) and setting_items.Chat_Logger.v and (sampIsChatInputActive() == false) and (sampIsDialogActive() == false) then
 			i_log_onscene.v = not i_log_onscene.v
 			imgui.Process = true
 		end
 		if isKeyJustPressed(VK_RBUTTON) and (sampIsChatInputActive() == false) and (sampIsDialogActive() == false) and control_recon and recon_to_player then
 			check_mouse = not check_mouse
 		end
-		if isKeyJustPressed(VK_C) and (sampIsChatInputActive() == false) and (sampIsDialogActive() == false) and control_recon and recon_to_player then
+		if isKeysDown(strToIdKeys(config.keys.Re_menu)) and (sampIsChatInputActive() == false) and (sampIsDialogActive() == false) and control_recon and recon_to_player then
 			right_re_menu = not right_re_menu	
 		end
-		if isKeyDown(VK_CONTROL) and isKeyDown(VK_H) and isKeyJustPressed(VK_I) and (sampIsDialogActive() == false) then
+		if isKeysDown(strToIdKeys(config.keys.Hello)) and (sampIsDialogActive() == false) then
 			sampSendChat("/a hi")	
 		end
 		if not sampIsPlayerConnected(control_recon_playerid) then
@@ -1283,6 +1298,107 @@ function string.rupper(s)
     end
     return output
 end
+function getDownKeys()
+    local curkeys = ""
+    local bool = false
+    for k, v in pairs(vkeys) do
+        if isKeyDown(v) and (v == VK_MENU or v == VK_CONTROL or v == VK_SHIFT or v == VK_LMENU or v == VK_RMENU or v == VK_RCONTROL or v == VK_LCONTROL or v == VK_LSHIFT or v == VK_RSHIFT) then
+            if v ~= VK_MENU and v ~= VK_CONTROL and v ~= VK_SHIFT then
+                curkeys = v
+            end
+        end
+    end
+    for k, v in pairs(vkeys) do
+        if isKeyDown(v) and (v ~= VK_MENU and v ~= VK_CONTROL and v ~= VK_SHIFT and v ~= VK_LMENU and v ~= VK_RMENU and v ~= VK_RCONTROL and v ~= VK_LCONTROL and v ~= VK_LSHIFT and v ~= VK_RSHIFT) then
+            if tostring(curkeys):len() == 0 then
+                curkeys = v
+            else
+                curkeys = curkeys .. " " .. v
+            end
+            bool = true
+        end
+    end
+    return curkeys, bool
+end
+function getDownKeysText()
+	tKeys = string.split(getDownKeys(), " ")
+	if #tKeys ~= 0 then
+		for i = 1, #tKeys do
+			if i == 1 then
+				str = vkeys.id_to_name(tonumber(tKeys[i]))
+			else
+				str = str .. "+" .. vkeys.id_to_name(tonumber(tKeys[i]))
+			end
+		end
+		return str
+	else
+		return "None"
+	end
+end
+function string.split(inputstr, sep)
+    if sep == nil then
+            sep = "%s"
+    end
+    local t={} ; i=1
+    for str in string.gmatch(inputstr, "([^"..sep.."]+)") do
+            t[i] = str
+            i = i + 1
+    end
+    return t
+end
+function strToIdKeys(str)
+	tKeys = string.split(str, "+")
+	if #tKeys ~= 0 then
+		for i = 1, #tKeys do
+			if i == 1 then
+				str = vkeys.name_to_id(tKeys[i], false)
+			else
+				str = str .. " " .. vkeys.name_to_id(tKeys[i], false)
+			end
+		end
+		return tostring(str)
+	else
+		return "(("
+	end
+end
+function isKeysDown(keylist, pressed)
+    local tKeys = string.split(keylist, " ")
+    if pressed == nil then
+        pressed = false
+    end
+    if tKeys[1] == nil then
+        return false
+    end
+    local bool = false
+    local key = #tKeys < 2 and tonumber(tKeys[1]) or tonumber(tKeys[2])
+    local modified = tonumber(tKeys[1])
+    if #tKeys < 2 then
+        if not isKeyDown(VK_RMENU) and not isKeyDown(VK_LMENU) and not isKeyDown(VK_LSHIFT) and not isKeyDown(VK_RSHIFT) and not isKeyDown(VK_LCONTROL) and not isKeyDown(VK_RCONTROL) then
+            if wasKeyPressed(key) and not pressed then
+                bool = true
+            elseif isKeyDown(key) and pressed then
+                bool = true
+            end
+        end
+    else
+        if isKeyDown(modified) and not wasKeyReleased(modified) then
+            if wasKeyPressed(key) and not pressed then
+                bool = true
+            elseif isKeyDown(key) and pressed then
+                bool = true
+            end
+        end
+    end
+    if nextLockKey == keylist then
+        if pressed and not wasKeyReleased(key) then
+            bool = false
+        else
+            bool = false
+            nextLockKey = ""
+        end
+    end
+    return bool
+end
 
 -- [x] -- ImGUI тело. -- [x] --
 local W_Windows = sw/1.145
@@ -1588,7 +1704,7 @@ function imgui.OnDrawFrame()
 	end
 	if i_setting_items.v then
 		imgui.SetNextWindowPos(imgui.ImVec2(sw-10, 10), imgui.Cond.FirstUseEver, imgui.ImVec2(1, 0.5))
-		imgui.SetNextWindowSize(imgui.ImVec2(300, 500), imgui.Cond.FirstUseEver)
+		imgui.SetNextWindowSize(imgui.ImVec2(300, sh/1.15), imgui.Cond.FirstUseEver)
 		imgui.Begin(u8"Настройки скрипта.", i_setting_items)
 		imgui.Text(u8"Автоматическое включение /remenu.")
 		imgui.SameLine()
@@ -1632,6 +1748,10 @@ function imgui.OnDrawFrame()
 			config.setting.Index = config.setting.Index - 0.05
 		end
 		imgui.Separator()
+		if imgui.Button(u8"Настройка клавиш скрипта.") then
+			setting_keys = true
+		end
+		imgui.Separator()
 		if imgui.Button(u8"Сохранить.") then
 			config.setting.Fast_ans = setting_items.Fast_ans.v
 			config.setting.Admin_chat = setting_items.Admin_chat.v
@@ -1668,6 +1788,65 @@ function imgui.OnDrawFrame()
 			imgui.Text(u8"Версия скрипта: " .. script_version_text)
 		end
 		imgui.End()
+		if setting_keys then
+			imgui.SetNextWindowPos(imgui.ImVec2(10, 10), imgui.Cond.FirstUseEver, imgui.ImVec2(1, 0.5))
+			imgui.SetNextWindowSize(imgui.ImVec2(300, sh/1.15), imgui.Cond.FirstUseEver)
+			imgui.Begin(u8"Настройка клавиш.")
+			imgui.Text(u8"Зажатые кнопки: ")
+			imgui.SameLine()
+			imgui.TextColored(imgui.ImVec4(0.71, 0.59, 1.0, 1.0), getDownKeysText())
+			imgui.Separator()
+			imgui.Text(u8"Открытие настроек: ")
+			imgui.SameLine()
+			imgui.TextColored(imgui.ImVec4(0.71, 0.59, 1.0, 1.0), config.keys.Setting)
+			imgui.SetCursorPosX(imgui.GetWindowWidth() - 84)
+			if imgui.Button(u8"Записать. ## 1", imgui.ImVec2(75, 0)) then
+				config.keys.Setting = getDownKeysText()
+				inicfg.save(config, directIni)
+			end
+			imgui.Separator()
+			imgui.Text(u8"Статистика игрока при слежке: ")
+			imgui.SameLine()
+			imgui.TextColored(imgui.ImVec4(0.71, 0.59, 1.0, 1.0), config.keys.Re_menu)
+			imgui.SetCursorPosX(imgui.GetWindowWidth() - 84)
+			if imgui.Button(u8"Записать. ## 2", imgui.ImVec2(75, 0)) then
+				config.keys.Re_menu = getDownKeysText()
+				inicfg.save(config, directIni)
+			end
+			imgui.Separator()
+			imgui.Text(u8"Приветствие в админ-чат: ")
+			imgui.SameLine()
+			imgui.TextColored(imgui.ImVec4(0.71, 0.59, 1.0, 1.0), config.keys.Hello)
+			imgui.SetCursorPosX(imgui.GetWindowWidth() - 84)
+			if imgui.Button(u8"Записать. ## 3", imgui.ImVec2(75, 0)) then
+				config.keys.Hello = getDownKeysText()
+				inicfg.save(config, directIni)
+			end
+			imgui.Separator()
+			imgui.Text(u8"Открытие лога мата: ")
+			imgui.SameLine()
+			imgui.TextColored(imgui.ImVec4(0.71, 0.59, 1.0, 1.0), config.keys.P_Log)
+			imgui.SetCursorPosX(imgui.GetWindowWidth() - 84)
+			if imgui.Button(u8"Записать. ## 4", imgui.ImVec2(75, 0)) then
+				config.keys.P_Log = getDownKeysText()
+				inicfg.save(config, directIni)
+			end
+			imgui.Separator()
+			imgui.Text(u8"Скрытие админ-чата: ")
+			imgui.SameLine()
+			imgui.TextColored(imgui.ImVec4(0.71, 0.59, 1.0, 1.0), config.keys.Hide_AChat)
+			imgui.SetCursorPosX(imgui.GetWindowWidth() - 84)
+			if imgui.Button(u8"Записать.", imgui.ImVec2(75, 0)) then
+				config.keys.Hide_AChat = getDownKeysText()
+				inicfg.save(config, directIni)
+			end
+			imgui.Separator()
+			if imgui.Button(u8"Назад.", imgui.ImVec2(-0.1, 0)) then
+				setting_keys = false
+			end
+			
+			imgui.End()
+		end
 	end
 	if i_log_onscene.v and setting_items.Chat_Logger.v then
 		imgui.SetNextWindowPos(imgui.ImVec2(10, 10), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))

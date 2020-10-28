@@ -805,7 +805,7 @@ function sampev.onTextDrawSetString(id, text)
 end
 -- {0777A3}[AH by Yamada.]: {CCCCCC} ID: 199 Text: Score: Health: Armour: CarHP: Speed: Ping: Ammo: Shot: TimeShot: AFKTime: P.Loss: VIP: Passive Mode: Turbo: Collision:
 function sampev.onShowTextDraw(id, data)
-	sampAddChatMessage(tag .. " ID: " .. id .. " Text: " .. data.text)
+	--sampAddChatMessage(tag .. " ID: " .. id .. " Text: " .. data.text)
 	if (id >= 3 and id <= 38 or id == 228 or id == 2078 or id == 2050) and setting_items.hide_td.v then
 		
 		return false

@@ -101,8 +101,8 @@ apply_custom_style()
 
 -- [x] -- Переменные. -- [x] --
 update_state = false
-local script_version = 9
-local script_version_text = "2.5 BugFix"
+local script_version = 10
+local script_version_text = "2.6 BugFix and little update"
 local update_url = "https://raw.githubusercontent.com/YamadaEnotic/AH-Script/master/update.ini"
 local update_path = getWorkingDirectory() .. '/update.ini'
 local script_url = "https://raw.githubusercontent.com/YamadaEnotic/AH-Script/master/AH_Bred.lua"
@@ -361,6 +361,10 @@ local punishments = {
 		reason = "Убийство игроков на спавне."
 	}
 }
+local offline_players = { }
+local offline_temp_id = -1
+local offline_temp_cmd = nil
+local offline_punishment = false
 local cmd_punis_jail = { "cdm" , "pk" , "ca" , "np" , "zv" , "dbp" , "bg" , "dm" , "sh", "fly", "fcar", "pmp", "sk"}
 local cmd_punis_mute = { "osk" , "mat" , "or" , "oa" , "ua" , "va" , "fld" , "popr" , "nead" , "rek" , "rosk" , "rmat" , "rao" , "otop" , "rcp", "um" }
 local cmd_punis_ban = { "ch" , "sob" , "aim" , "rvn" , "cars" , "ac" , "ich" , "isob" , "iaim" , "irvn" , "icars" , "iac" , "bn" } 
@@ -452,128 +456,7 @@ local download_aditional = {
 	}
 }
 local onscene = { "блять", "сука", "хуй", "нахуй" }
-local log_onscene = {
-	--[[["player_1"] = {
-		id = nil,
-		name = " ",
-		text = " ",
-		suspicion = " "
-	},
-	["player_2"] = {
-		id = nil,
-		name = " ",
-		text = " ",
-		suspicion = " "
-	},
-	["player_3"] = {
-		id = nil,
-		name = " ",
-		text = " ",
-		suspicion = " "
-	},
-	["player_4"] = {
-		id = nil,
-		name = " ",
-		text = " ",
-		suspicion = " "
-	},
-	["player_5"] = {
-		id = nil,
-		name = " ",
-		text = " ",
-		suspicion = " "
-	},
-	["player_6"] = {
-		id = nil,
-		name = " ",
-		text = " ",
-		suspicion = " "
-	},
-	["player_7"] = {
-		id = nil,
-		name = " ",
-		text = " ",
-		suspicion = " "
-	},
-	["player_8"] = {
-		id = nil,
-		name = " ",
-		text = " ",
-		suspicion = " "
-	},
-	["player_9"] = {
-		id = nil,
-		name = " ",
-		text = " ",
-		suspicion = " "
-	},
-	["player_10"] = {
-		id = nil,
-		name = " ",
-		text = " ",
-		suspicion = " "
-	},
-	["player_11"] = {
-		id = nil,
-		name = " ",
-		text = " ",
-		suspicion = " "
-	},
-	["player_12"] = {
-		id = nil,
-		name = " ",
-		text = " ",
-		suspicion = " "
-	},
-	["player_13"] = {
-		id = nil,
-		name = " ",
-		text = " ",
-		suspicion = " "
-	},
-	["player_14"] = {
-		id = nil,
-		name = " ",
-		text = " ",
-		suspicion = " "
-	},
-	["player_15"] = {
-		id = nil,
-		name = " ",
-		text = " ",
-		suspicion = " "
-	},
-	["player_16"] = {
-		id = nil,
-		name = " ",
-		text = " ",
-		suspicion = " "
-	},
-	["player_17"] = {
-		id = nil,
-		name = " ",
-		text = " ",
-		suspicion = " "
-	},
-	["player_18"] = {
-		id = nil,
-		name = " ",
-		text = " ",
-		suspicion = " "
-	},
-	["player_19"] = {
-		id = nil,
-		name = " ",
-		text = " ",
-		suspicion = " "
-	},
-	["player_20"] = {
-		id = nil,
-		name = " ",
-		text = " ",
-		suspicion = " "
-	}]]
-}
+local log_onscene = { }
 local russian_characters = {
     [168] = 'Ё', [184] = 'ё', [192] = 'А', [193] = 'Б', [194] = 'В', [195] = 'Г', [196] = 'Д', [197] = 'Е', [198] = 'Ж', [199] = 'З', [200] = 'И', [201] = 'Й', [202] = 'К', [203] = 'Л', [204] = 'М', [205] = 'Н', [206] = 'О', [207] = 'П', [208] = 'Р', [209] = 'С', [210] = 'Т', [211] = 'У', [212] = 'Ф', [213] = 'Х', [214] = 'Ц', [215] = 'Ч', [216] = 'Ш', [217] = 'Щ', [218] = 'Ъ', [219] = 'Ы', [220] = 'Ь', [221] = 'Э', [222] = 'Ю', [223] = 'Я', [224] = 'а', [225] = 'б', [226] = 'в', [227] = 'г', [228] = 'д', [229] = 'е', [230] = 'ж', [231] = 'з', [232] = 'и', [233] = 'й', [234] = 'к', [235] = 'л', [236] = 'м', [237] = 'н', [238] = 'о', [239] = 'п', [240] = 'р', [241] = 'с', [242] = 'т', [243] = 'у', [244] = 'ф', [245] = 'х', [246] = 'ц', [247] = 'ч', [248] = 'ш', [249] = 'щ', [250] = 'ъ', [251] = 'ы', [252] = 'ь', [253] = 'э', [254] = 'ю', [255] = 'я',
 }
@@ -701,6 +584,7 @@ function main()
 	admin_chat = lua_thread.create_suspended(drawAdminChat)
 	check_dialog_active = lua_thread.create_suspended(checkIsDialogActive)
 	draw_re_menu = lua_thread.create_suspended(drawRePlayerInfo)
+	check_updates = lua_thread.create_suspended(sampCheckUpdateScript)
 	load_info_player = lua_thread.create_suspended(loadPlayerInfo)
 	wallhack = lua_thread.create(drawWallhack)
 	check_cmd = lua_thread.create_suspended(function()
@@ -711,12 +595,8 @@ function main()
 	
 	downloadUrlToFile(update_url, update_path, function(id, status)
 		if status == dlstat.STATUS_ENDDOWNLOADDATA then
-			updateIni = inicfg.load(nil, update_path)
-			if tonumber(updateIni.info.version) > script_version then
-				showNotification("Доступно обновление.", "Старая версия скрипта: {AA0000}" .. script_version_text .. "\nНовая версия скрипта: {33AA33}" .. updateIni.info.version_text)
-				update_state = true
-			end
-			os.remove(update_path)
+			check_updates:run()
+			showNotification("Проверка обновления.", "Идет провека обновления!")
 		end
 	end)
 	
@@ -796,6 +676,15 @@ function main()
 end
 
 -- [x] -- Доп. функции -- [x] --
+function sampCheckUpdateScript()
+	wait(5000)
+	updateIni = inicfg.load(nil, update_path)
+	if tonumber(updateIni.info.version) > script_version then
+		showNotification("Доступно обновление.", "Старая версия скрипта: {AA0000}" .. script_version_text .. "\nНовая версия скрипта: {33AA33}" .. updateIni.info.version_text)
+		update_state = true
+	end
+	os.remove(update_path)
+end
 -- {0777A3}[AH by Yamada.]: {CCCCCC} ID: 2067 Text: 190~n~100.000000~n~100.000000~n~-1~n~0 / 28~n~74~n~0 : 0 ~n~0 / 0 : 0~n~0 / 0 : 0~n~0~n~0.00 ~n
 function sampev.onTextDrawSetString(id, text)
 	--sampAddChatMessage(tag .. " ID: " .. id .. " Text: " .. text)
@@ -856,43 +745,29 @@ function sampev.onSendChat(message)
 		else
 			if string.match(message, "-(.+) (.+) (.+)") == nil and string.match(message, "-(.+) (.+)") ~= nil then
 				local checkstr, id = string.match(message, "-(.+) (.+)")
+				offline_temp_id = id
+				offline_temp_cmd = checkstr
+				offline_punishment = true
 				if punishments[checkstr] ~= nil then
-					--if string.match(id, "(.+) (.+)") == nil then
-						--sampSendChat("/ans " .. id .. " Если Вы не согласны с верностью выданного наказания, Вы можете оставить жалобу...")
-						--sampSendChat("/ans " .. id .. " ...в нашей группе с Скриншотом наказания. Наша группа VK >> vk.com/dmdriftgta")
-						sampSendChat("/" .. punishments[checkstr].cmd .. " " .. id .. " " .. punishments[checkstr].time .. " " .. punishments[checkstr].reason)
-						return false
-					--[[else
-						local pid, mno = string.match(id, "(.+) (.+)")
-						sampSendChat("/" .. punishments[checkstr].cmd .. " " .. id .. " " .. tonumber(punishments[checkstr].time)*tonumber(mno) .. " " .. punishments[checkstr].reason .. " x" .. mno)
-						return false
-					end]]
+					sampSendChat("/" .. punishments[checkstr].cmd .. " " .. id .. " " .. punishments[checkstr].time .. " " .. punishments[checkstr].reason)
+					return false
 				elseif punishments[string.lower(RusToEng(checkstr))] ~= nil then
 					checkstr = string.lower(RusToEng(checkstr))
-					--if string.match(id, "(.+) (.+)") == nil then
-						--sampSendChat("/ans " .. id .. " Если Вы не согласны с верностью выданного наказания, Вы можете оставить жалобу...")
-						--sampSendChat("/ans " .. id .. " ...в нашей группе с Скриншотом наказания. Наша группа VK >> vk.com/dmdriftgta")
-						sampSendChat("/" .. punishments[checkstr].cmd .. " " .. id .. " " .. punishments[checkstr].time .. " " .. punishments[checkstr].reason)
-						return false
-					--[[else
-						local pid, mno = string.match(id, "(.+) (.+)")
-						sampSendChat("/" .. punishments[checkstr].cmd .. " " .. id .. " " .. tonumber(punishments[checkstr].time)*tonumber(mno) .. " " .. punishments[checkstr].reason .. " x" .. mno)
-						return false
-					end]]
+					sampSendChat("/" .. punishments[checkstr].cmd .. " " .. id .. " " .. punishments[checkstr].time .. " " .. punishments[checkstr].reason)
+					return false
 				else
 					return true
 				end
 			elseif string.match(message, "-(.+) (.+) (.+)") ~= nil then
 				local checkstr, id, mno = string.match(message, "-(.+) (.+) (.+)")
+				offline_temp_id = id
+				offline_temp_cmd = checkstr
+				offline_punishment = true
 				if punishments[checkstr] ~= nil then
-					--sampSendChat("/ans " .. id .. " Если Вы не согласны с верностью выданного наказания, Вы можете оставить жалобу...")
-					--sampSendChat("/ans " .. id .. " ...в нашей группе с Скриншотом наказания. Наша группа VK >> vk.com/dmdriftgta")
 					sampSendChat("/" .. punishments[checkstr].cmd .. " " .. id .. " " .. tonumber(punishments[checkstr].time)*tonumber(mno) .. " " .. punishments[checkstr].reason .. " x" .. mno)
 					return false
 				elseif punishments[string.lower(RusToEng(checkstr))] ~= nil then
 					checkstr = string.lower(RusToEng(checkstr))
-					--sampSendChat("/ans " .. id .. " Если Вы не согласны с верностью выданного наказания, Вы можете оставить жалобу...")
-					--sampSendChat("/ans " .. id .. " ...в нашей группе с Скриншотом наказания. Наша группа VK >> vk.com/dmdriftgta")
 					sampSendChat("/" .. punishments[checkstr].cmd .. " " .. id .. " " .. tonumber(punishments[checkstr].time)*tonumber(mno) .. " " .. punishments[checkstr].reason .. " x" .. mno)
 					return false
 				else
@@ -917,6 +792,35 @@ end
 function sampev.onServerMessage(color, text)
 	local check_string = string.match(text, "[^%s]+")
 	local _, check_mat_id, _, check_mat = string.match(text, "(.+)%((.+)%): {(.+)}(.+)")
+	local offline_nick, offline_id = text:match("(%S+)%((%d+)%){ffffff} отключился с сервера")
+	if offline_nick ~= nil and offline_id ~= nil then
+		offline_players[tonumber(offline_id)] = offline_nick
+	end
+	if text:match("Игрока нет на сервере") ~= nil and offline_punishment == true then
+		sampAddChatMessage(tag .. "Данного игрока нет на сервере, поиск в базе вышедших.")
+		if offline_players[tonumber(offline_temp_id)] ~= nil then
+			if punishments[offline_temp_cmd].cmd == "jail" then
+				sampSendChat("/prisonakk " .. offline_players[tonumber(offline_temp_id)] .. " " .. punishments[offline_temp_cmd].time .. " " .. punishments[offline_temp_cmd].reason)
+			elseif punishments[offline_temp_cmd].cmd == "mute" then
+				sampSendChat("/muteakk " .. offline_players[tonumber(offline_temp_id)] .. " " .. punishments[offline_temp_cmd].time .. " " .. punishments[offline_temp_cmd].reason)
+			elseif punishments[offline_temp_cmd].cmd == "ban" then
+				sampSendChat("/offban " .. offline_players[tonumber(offline_temp_id)] .. " " .. punishments[offline_temp_cmd].time .. " " .. punishments[offline_temp_cmd].reason)
+			end
+			sampAddChatMessage(tag .. "Поиск в базе дал положительный результат, выдаю наказание.")
+			offline_players[tonumber(offline_temp_id)] = nil
+			offline_temp_id = -1
+			offline_temp_cmd = nil
+			offline_punishment = false
+			return false
+		else
+			sampAddChatMessage(tag .. "Поиск в базе дал отрицательный результат, наказание выдать невозможно.")
+			offline_players[offline_temp_id] = nil
+			offline_temp_id = -1
+			offline_temp_cmd = nil
+			offline_punishment = false
+			return false
+		end
+	end
 	if setting_items.Admin_chat.v and check_string ~= nil and string.find(check_string, "%[A%-(%d+)%]") ~= nil then
 		admin_chat_lines.chat_line_10 = admin_chat_lines.chat_line_9
 		admin_chat_lines.chat_line_9 = admin_chat_lines.chat_line_8
@@ -1317,293 +1221,6 @@ function imgui.OnDrawFrame()
 				end
 			end
 		end
-		--[[if imgui.Button(i_ans[1], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[1]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[1]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end
-		if imgui.Button(i_ans[2], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[2]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[2]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end
-		if imgui.Button(i_ans[3], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[3]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[3]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end
-		if imgui.Button(i_ans[4], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[4]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[4]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end
-		if imgui.Button(i_ans[5], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[5]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[5]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end
-		if imgui.Button(i_ans[6], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[6]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[6]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end
-		if imgui.Button(i_ans[7], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[7]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[7]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end
-		if imgui.Button(i_ans[8], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[8]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[8]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end
-		if imgui.Button(i_ans[9], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[9]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[9]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end
-		if imgui.Button(i_ans[10], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[10]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[10]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end
-		if imgui.Button(i_ans[11], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[11]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[11]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end
-		if imgui.Button(i_ans[12], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[12]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[12]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end
-		if imgui.Button(i_ans[13], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[13]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[13]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end
-		if imgui.Button(i_ans[14], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[14]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[14]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end
-		if imgui.Button(i_ans[15], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[15]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[15]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end
-		if imgui.Button(i_ans[16], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[16]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[16]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end
-		if imgui.Button(i_ans[17], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[17]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[17]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end
-		if imgui.Button(i_ans[18], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[18]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[18]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end
-		if imgui.Button(i_ans[19], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[19]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[19]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end
-		if imgui.Button(i_ans[20], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[20]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[20]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end
-		if imgui.Button(i_ans[21], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[21]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[21]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end
-		if imgui.Button(i_ans[22], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[22]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[22]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end
-		if imgui.Button(i_ans[23], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[23]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[23]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end
-		if imgui.Button(i_ans[24], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[24]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[24]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end
-		if imgui.Button(i_ans[25], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[25]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[25]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end
-		if imgui.Button(i_ans[26], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[26]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[26]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end
-		if imgui.Button(i_ans[27], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[27]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[27]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end
-		if imgui.Button(i_ans[28], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[28]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[28]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end
-		if imgui.Button(i_ans[29], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[29]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[29]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end
-		if imgui.Button(i_ans[30], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[30]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[30]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end
-		if imgui.Button(i_ans[31], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[31]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[31]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end
-		if imgui.Button(i_ans[32], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[32]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[32]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end
-		if imgui.Button(i_ans[33], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[33]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[33]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end
-		if imgui.Button(i_ans[34], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[34]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[34]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end
-		if imgui.Button(i_ans[35], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[35]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[35]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end
-		if imgui.Button(i_ans[36], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[36]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[36]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end
-		if imgui.Button(i_ans[37], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[37]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[37]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end
-		if imgui.Button(i_ans[38], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[38]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[38]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end
-		if imgui.Button(i_ans[39], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[39]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[39]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end
-		if imgui.Button(i_ans[40], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[40]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[40]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end
-		if imgui.Button(i_ans[41], btn_size) then
-			if not i_back_prefix.v then
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[41]))
-			else
-				sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(i_ans[41]) .. ' {AAAAAA}// Приятной игры на "RDS"!')
-			end
-		end]]
 		imgui.End()
 	end
 	if i_setting_items.v then
@@ -1772,52 +1389,6 @@ function imgui.OnDrawFrame()
 		imgui.SetNextWindowPos(imgui.ImVec2(sw/2, sh/2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 1))
 		imgui.SetNextWindowSize(imgui.ImVec2(sw/1.3, -0.1), imgui.Cond.FirstUseEver)
 		imgui.Begin(u8"Чего нового в скрипте.", i_info_update)
-		--[[imgui.Text(u8"Ниже представлены игроки, которые нарушили правила чата.")
-		for i, v in ipairs(log_onscene) do
-			if v.id ~= nil then
-				imgui.Separator()
-				imgui.Text(u8"Ник игрока: " .. u8:encode(v.name) .. " ID: " .. u8:encode(v.id) .. 
-				u8"\nСлово, которое попало под подозрения: " .. u8:encode(v.suspicion) .. 
-				u8"\nТекст из чата: " .. u8:encode(v.text) .. 
-				u8"\nДата: " .. date_onscene[i] ..
-				u8"\nНаказание:")
-				if imgui.Button(u8"Мат. ##" .. i, imgui.ImVec2(90, 0)) then
-					sampSendChat("/mute " .. v.id .. " 300 Нецензурная лексика.")
-					v.id = nil
-					controlOnscene()
-				end
-				imgui.SameLine()
-				if imgui.Button(u8"Оск. ##" .. i, imgui.ImVec2(90, 0)) then
-					sampSendChat("/mute " .. v.id .. " 400 Оскорбление игрока.")
-					v.id = nil
-					controlOnscene()
-				end
-				imgui.SameLine()
-				if imgui.Button(u8"Униж. ##" .. i, imgui.ImVec2(90, 0)) then
-					sampSendChat("/mute " .. v.id .. " 400 Унижение игрока игрока.")
-					v.id = nil
-					controlOnscene()
-				end
-				imgui.SameLine()
-				if imgui.Button(u8"Оск. Род. ##" .. i, imgui.ImVec2(90, 0)) then
-					sampSendChat("/mute " .. v.id .. " 5000 Упоминание родителей.")
-					v.id = nil
-					controlOnscene()
-				end
-				imgui.SameLine()
-				if imgui.Button(u8"Оск. Адм. ##" .. i, imgui.ImVec2(90, 0)) then
-					sampSendChat("/mute " .. v.id .. " 2500 Оскорбление администрации.")
-					v.id = nil
-					controlOnscene()
-				end 
-				imgui.SameLine()
-				if imgui.Button(u8"Очистить. ##" .. i, imgui.ImVec2(90, 0)) then
-					v.id = nil
-					controlOnscene()
-				end 
-			end
-		end
-		imgui.Separator()]]
 		imgui.Text(u8"Что было добавленно:\n")
 		imgui.SetCursorPosX(20)
 		imgui.Text(u8"- Было добавлена система авто-мута. Можно добавить в систему запрещенные слова,\n и скрипт, при обноружении данных слов в чате, мутит человека.")

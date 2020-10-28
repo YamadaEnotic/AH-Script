@@ -101,8 +101,8 @@ apply_custom_style()
 
 -- [x] -- Ïåğåìåííûå. -- [x] --
 update_state = false
-local script_version = 8
-local script_version_text = "2.4 BugFix ( Arman isportil :( )"
+local script_version = 9
+local script_version_text = "2.5 BugFix"
 local update_url = "https://raw.githubusercontent.com/YamadaEnotic/AH-Script/master/update.ini"
 local update_path = getWorkingDirectory() .. '/update.ini'
 local script_url = "https://raw.githubusercontent.com/YamadaEnotic/AH-Script/master/AH_Bred.lua"
@@ -799,14 +799,14 @@ end
 -- {0777A3}[AH by Yamada.]: {CCCCCC} ID: 2067 Text: 190~n~100.000000~n~100.000000~n~-1~n~0 / 28~n~74~n~0 : 0 ~n~0 / 0 : 0~n~0 / 0 : 0~n~0~n~0.00 ~n
 function sampev.onTextDrawSetString(id, text)
 	--sampAddChatMessage(tag .. " ID: " .. id .. " Text: " .. text)
-	if id == 2074 and setting_items.hide_td.v then
+	if id == 2078 and setting_items.hide_td.v then
 		player_info = textSplit(text, "~n~")
 	end
 end
 -- {0777A3}[AH by Yamada.]: {CCCCCC} ID: 199 Text: Score: Health: Armour: CarHP: Speed: Ping: Ammo: Shot: TimeShot: AFKTime: P.Loss: VIP: Passive Mode: Turbo: Collision:
 function sampev.onShowTextDraw(id, data)
-	--sampAddChatMessage(tag .. " ID: " .. id .. " Text: " .. data.text)
-	if (id >= 406 and id <= 441 or id == 187 or id == 2074 or id == 2107) and setting_items.hide_td.v then
+	sampAddChatMessage(tag .. " ID: " .. id .. " Text: " .. data.text)
+	if (id >= 3 and id <= 38 or id == 228 or id == 2078 or id == 2050) and setting_items.hide_td.v then
 		
 		return false
 	end
@@ -1847,7 +1847,7 @@ function imgui.OnDrawFrame()
 		imgui.Begin(u8"Íàêàçàíèÿ èãğîêà.", false, 2+4+32)
 			imgui.SetCursorPosX(imgui.GetWindowWidth()/2.43-160)
 			if imgui.Button(u8"Îáíîâèòü.", imgui.ImVec2(75, 0)) then
-				sampSendClickTextdraw(435)
+				sampSendClickTextdraw(440)
 			end
 			imgui.SameLine()
 			imgui.SetCursorPosX(imgui.GetWindowWidth()/2.43-80)

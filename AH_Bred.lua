@@ -16,7 +16,7 @@ local encoding							= require "encoding"
 local vkeys								= require "lib.vkeys"
 local inicfg							= require "inicfg"
 local notfy								= import 'lib/lib_imgui_notf.lua'
---local sc_board							= import 'lib/scoreboard.lua'
+local sc_board							= import 'lib/scoreboard.lua'
 --local pie								= require "imgui_piemenu"
 --local theme								= import "Module/imgui_themes.lua"
 encoding.default 						= "CP1251"
@@ -116,6 +116,7 @@ local defTable = {
 	setting = {
 		Tranparency = false,
 		Auto_remenu = false,
+		Custom_SB = false,
 		Fast_ans = false,
 		Punishments = false,
 		Index = 2.0,
@@ -232,7 +233,7 @@ local punishments = {
 	["or"] = {
 		cmd = "mute",
 		time = 5000,
-		reason = "Уопминание родителей."
+		reason = "Упоминание родителей."
 	},
 	["oa"] = {
 		cmd = "mute",
@@ -361,6 +362,9 @@ local punishments = {
 		reason = "Убийство игроков на спавне."
 	}
 }
+local access = {
+	cmd, need_access
+}
 local offline_players = { }
 local offline_temp_id = -1
 local offline_temp_cmd = nil
@@ -369,47 +373,106 @@ local cmd_punis_jail = { "cdm" , "pk" , "ca" , "np" , "zv" , "dbp" , "bg" , "dm"
 local cmd_punis_mute = { "osk" , "mat" , "or" , "oa" , "ua" , "va" , "fld" , "popr" , "nead" , "rek" , "rosk" , "rmat" , "rao" , "otop" , "rcp", "um" }
 local cmd_punis_ban = { "ch" , "sob" , "aim" , "rvn" , "cars" , "ac" , "ich" , "isob" , "iaim" , "irvn" , "icars" , "iac" , "bn" } 
 local i_ans = {
-	u8'/givemoney ID Сумма.',
-	u8'/givescore ID Сумма (От Diamond VIP).',
-	u8'/donate.',
-	u8'/tp >> Разное >> Банк >> Ограбьте его.',
-	u8'/rdscoin.',
-	u8'/help - 13.',
-	u8'/help - 7.',
-	u8'/help.',
-	u8'/menu.',
-	u8'/menu >> Настройки.',
-	u8'/menu >> Транспортное Средство.',
-	u8'/menu >> Действия.',
-	u8'Вы можете оставить жалобу в нашей группе в ВК > vk.com/dmdriftgta.',
-	u8'Наша группа в ВК > vk.com/dmdriftgta.',
-	u8'Уточните вопрос.',
-	u8'Уточните суть жалобы.',
-	u8'Уточните ID игрока.',
-	u8'Да.',
-	u8'Нет.',
-	u8'Слежу.',
-	u8'"/statpl" либо "TAB".',
-	u8'/statpl',
-	u8'Не знаем.',
-	u8'Не запрещено.',
-	u8'Наш сайт > myrds.ru',
-	u8'GМ на сервере не работает.',
-	u8'Скорее всего - это баг.',
-	u8'/fleave, /gleave, /leave.',
-	u8'Рынок и обменный функционал сервера по команде: "/trade".',
-	u8'Данный игрок был наказан.',
-	u8'Данный игрок находится вне сети.',
-	u8'/car',
-	u8'Вы можете уточнить данную информацию в интернете..',
-	u8'Ожидайте.',
-	u8'Проверим.',
-	u8'/fpanel',
-	u8'/tp >> Разное >> Автосалоны.',
-	u8'Данный игрок чист.',
-	u8'Приношу свои извинения, произошла ошибка ID.',
-	u8'Чтобы попасть в банду: "/nab"',
-	u8'Используйте "/dt 1 - 990"'
+	["default"] =
+	{
+		[u8"Начать работу по жалобе."] = "Начинаю работать по вашей жалобе.",
+		[u8"Уточните."] = "Пожалуйста уточните вашу жалобу.",
+		[u8"Ожидайте."] = "Ожидайте.",
+		[u8"Попробую помочь."] = "Сейчас попробую вам помочь.",
+		[u8"Слежу."] = "Слежу.",
+		[u8"Не оффтопте"] = "Не оффтопте!",
+		[u8"Проверим"] = "Проверим, ожидайте некотрое время.",
+		[u8"Приятной игры"] = "Приятной игры на Russian Drift Server!"
+	},
+	[u8'Про вип'] = 
+	{
+		[u8"Где взять обычный вип"] = "У НПС на /trade за 10.000 очков.",
+		[u8"Где взять премиум вип"] = "У НПС на /trade за 10.000 очков.",
+		[u8"Где взять даймонд вип"] = "/donate > 4 пункт.",
+		[u8"Где взять платинум вип"] = "/donate > 5 пункт.",
+		[u8"Что может вип"] = "Данную информацию узнайте в /help > 7."
+	},
+	[u8'Про коины, очки и деньги'] =
+	{
+		[u8"Как заработать деньги, коины и очки"] = "Всю иформацию вы можете узнать в /help > 13.",
+		[u8"Куда тратить коины"] = "На личное авто, клубы, аксесуары и т.д.",
+		[u8"Куда тратить очки"] = "На личное авто, аксесуары, вип статусы, обменять и т.д.",
+		[u8"Куда тратить деньги"] = "На личное покупку бизнесов, оружия и т.д.",
+		[u8"Как передать очки"] = "/givescore При наличии Даймонд Вип.",
+		[u8"Как передать коины"] = "К сожалению никак.",
+		[u8"Как передать деньги"] = "/givemoney id сумма.",
+		[u8"Где обменять очки на вирыт или коины"] = "У Армана на /trade."
+	},
+	[u8'Про банду'] =
+	{
+		[u8"Как принять в банду"] = "/menu > система банд > пригласить в банду.",
+		[u8"Как выйти из банды"] = "/gleave.",
+		[u8"Система банд"] = "/menu > ситема банд.Там вы все найдете.",
+		[u8"Как создать"] = "/menu > ситема банд > создать.",
+		[u8"Где найти HTML-цвет."] = "Посмотрите в интернете. Ссылка - https://basicweb.ru/html/html_colors.php."
+	},
+	[u8'Семья'] = 
+	{
+		[u8"Как принять в семью"] = "/finvite.",
+		[u8"Как создать"] = "/trade > у НПС Армана за 50.000 очков.",
+		[u8"Как уйти из семью"] = "/familypanel > покинуть семью.",
+		[u8"Меню семьи."] = "/familypanel, там вы сможете это найти."
+	},
+	[u8'Ссылки'] =
+	{
+		[u8"Ссылка на основателя"] = "Ссылка на вк основателя > vk.com/id139345872.",
+		[u8"Ссылка на кодера"] = "Кодер в ВК > vk.com/vipgamer228.",
+		[u8"Ссылка группы сервера"] = "Группа в ВК > vk.com/dmdriftgta."
+	},
+	[u8'Дом'] =
+	{
+		[u8"Как купить дом"] = "Найти свободный, всать на пикап, нажать F > Купить.",
+		[u8"Как продать дом"] = "В гос - /hpanel > продать дом.Продать дом игроку /sellmyhouse id цена.",
+		[u8"Как подселить в дом"] = "/hpanel > список жильцов > подселить."
+	},
+	[u8'Транспорт'] =
+	{
+		[u8"Как взять авто"] = "/menu > транспорт > тип транспорта.",
+		[u8"Как протюнинговать авто"] = "/menu > транспорт > тюнинг.",
+		[u8"Как заспавнить л/ч авто"] = "/car > заспавнить.",
+		[u8"Как купить личное авто"] = "/tp > разное > автосалоны.",
+		[u8"Как продать л/ч авто"] = "В гос - /car > продать авто.Продать игроку - /autoyartp."
+	},
+	[u8'Оружия'] =
+	{
+		[u8"Как взять оружие"] = "/menu > оружия.",
+		[u8"Как убрать оружие"] = "/menu > оружия > убрать оружие."
+	},
+	[u8'Пункт настройки'] =
+	{
+		[u8"Вход/выход игроков"] = "/menu > настройки > 1 пункт.",
+		[u8"Разрешение вызывать на дуель"] = "/menu > настройки > 2 пункт.",
+		[u8"Вкл/откл личные сообщения"] = "/menu > настройки > 3 пункт.",
+		[u8"Запросы на телепорт"] = "/menu > настройки > 4 пункт.",
+		[u8"Показ DM Статистики"] = "/menu > настройки > 5 пункт.",
+		[u8"Эфект при телепортации"] = "/menu > настройки > 6 пункт.",
+		[u8"Показывать спидометр"] = "/menu > настройки > 7 пункт.",
+		[u8"Показывать Дрифт Уровень"] = "/menu > настройки > 8 пункт.",
+		[u8"Спавн в доме/доме семью"] = "/menu > настройки > 9 пункт.",
+		[u8"Вызов главного меню"] = "/menu > настройки > 10 пункт.",
+		[u8"Вкк/Выкл приглашение в банду"] = "/menu > настройки > 11 пункт.",
+		[u8"Выбор ТС На текст драве"] = "/menu > настройки > 12 пункт.",
+		[u8"Вкл/Выкл кейс"] = "/menu > настройки > 13 пункт.",
+		[u8"Вкл/Выкл фпс показатель"] = "/menu > настройки > 15 пункт."
+	},
+	[u8'Другое'] =
+	{
+		[u8"Пишите жалобу"] = "Пишите жалобу в группу вк > vk.com/dmdriftgta.",
+		[u8"Посмотрите в интернете."] = "Посмотрите в интренете.",
+		[u8"Нет"] = "Нет.",
+		[u8"Не выдаем"] = "Не выдаем.",
+		[u8"Не запрещенно"] = "Не запрещенно.",
+		[u8"Где взять кейс"] = "Он появится при наличии 100 милилонов на руках.",
+		[u8"Как вкл/выкл кейс"] = "/menu > настройки > 13 пункт.",
+		[u8"Как отправлять дуель"] = "/duel id.",
+		[u8"Перезайдите"] = "Попробйте перезайти на сервер.",
+		[u8"Никак"] = "Никак."
+	}
 }
 local translate = {
 	["й"] = "q",
@@ -479,6 +542,8 @@ local check_cmd_punis = nil
 local right_re_menu = true
 local mouse_cursor = true
 local control_onscene = false
+local chat_logger_text = { }
+local accept_load_clog = false
 
 -- [x] -- ImGUI переменные. -- [x] --
 local i_ans_window = imgui.ImBool(false)
@@ -487,9 +552,12 @@ local i_back_prefix = imgui.ImBool(false)
 local i_info_update = imgui.ImBool(false)
 local i_re_menu = imgui.ImBool(false)
 local i_cmd_helper = imgui.ImBool(false)
+local i_chat_logger = imgui.ImBool(false)
 local font_size_ac = imgui.ImBuffer(16)
 local HelloAC = imgui.ImBuffer(300)
 local logo_image
+local chat_logger = imgui.ImBuffer(10000)
+local chat_find = imgui.ImBuffer(256)
 local setting_items = {
 	Fast_ans = imgui.ImBool(false),
 	Punishments = imgui.ImBool(false),
@@ -498,7 +566,8 @@ local setting_items = {
 	Auto_remenu = imgui.ImBool(false),
 	Push_Report = imgui.ImBool(false),
 	Chat_Logger = imgui.ImBool(false),
-	hide_td = imgui.ImBool(false)
+	hide_td = imgui.ImBool(false),
+	Custom_SB = imgui.ImBool(false)
 }
 -- [x] -- Тело скрипта. -- [x] --
 function main()
@@ -506,13 +575,19 @@ function main()
 	if not isSampLoaded() or not isSampfuncsLoaded() then return end
 	while not isSampAvailable() do wait(0) end
 	
+	chatlogDirectory = getWorkingDirectory() .. "\\config\\AH_Setting\\chatlog"
+    if not doesDirectoryExist(chatlogDirectory) then
+        createDirectory(getWorkingDirectory() .. "\\config\\AH_Setting\\chatlog")
+    end
+
 	if not doesDirectoryExist(getWorkingDirectory() .. "/config/AH_Setting") then
 		createDirectory(getWorkingDirectory() .. "/config/AH_Setting")
 	end
 	if not doesDirectoryExist(getWorkingDirectory() .. "/config/AH_Setting/audio") then
 		createDirectory(getWorkingDirectory() .. "/config/AH_Setting/audio")
 	end
-	
+	sc_board.ScriptData(thisScript())
+
 	sampRegisterChatCommand('ah_setting', function()
 		i_setting_items.v = not i_setting_items.v
 		imgui.Process = i_setting_items.v
@@ -565,12 +640,26 @@ function main()
 			sampAddChatMessage(tag .. "Слова \"" .. string.rlower(param) .. "\" нет в списке мата.")
 		end
 	end)
+	sampRegisterChatCommand('cfind', function(param)
+		if param == nil then
+			i_chat_logger.v = not i_chat_logger.v
+			imgui.Process = true
+			chat_logger_text = readChatlog()
+		else
+			i_chat_logger.v = not i_chat_logger.v
+			imgui.Process = true
+			chat_find.v = param
+			chat_logger_text = readChatlog()
+		end
+		load_chat_log:run()
+	end)
 	
 	
 	config = inicfg.load(defTable, directIni)
 	setting_items.Fast_ans.v = config.setting.Fast_ans
 	setting_items.Punishments.v = config.setting.Punishments
 	setting_items.Admin_chat.v = config.setting.Admin_chat
+	setting_items.Custom_SB.v = config.setting.Custom_SB
 	setting_items.Transparency.v = config.setting.Tranparency
 	setting_items.Auto_remenu.v = config.setting.Auto_remenu
 	setting_items.Push_Report.v = config.setting.Push_Report
@@ -585,6 +674,7 @@ function main()
 	check_dialog_active = lua_thread.create_suspended(checkIsDialogActive)
 	draw_re_menu = lua_thread.create_suspended(drawRePlayerInfo)
 	check_updates = lua_thread.create_suspended(sampCheckUpdateScript)
+	load_chat_log = lua_thread.create_suspended(loadChatLog)
 	load_info_player = lua_thread.create_suspended(loadPlayerInfo)
 	wallhack = lua_thread.create(drawWallhack)
 	check_cmd = lua_thread.create_suspended(function()
@@ -624,10 +714,13 @@ function main()
 		else
 			i_re_menu.v = false
 		end
+		if isKeyJustPressed(0x09) and setting_items.Custom_SB.v then
+			sc_board.ActivetedScoreboard()
+		end
 		if isKeysDown(strToIdKeys(config.keys.Hide_AChat)) and (sampIsChatInputActive() == false) and (sampIsDialogActive() == false) then
 			setting_items.Admin_chat.v = not setting_items.Admin_chat.v
 		end
-		if not i_setting_items.v and not i_ans_window.v and not i_info_update.v and not i_re_menu.v and not i_cmd_helper.v then
+		if not i_setting_items.v and not i_ans_window.v and not i_info_update.v and not i_re_menu.v and not i_cmd_helper.v and not i_chat_logger.v then
 			imgui.Process = false
 		end
 		if sampGetCurrentDialogId() == 2351 and setting_items.Fast_ans.v and sampIsDialogActive() then
@@ -685,14 +778,12 @@ function sampCheckUpdateScript()
 	end
 	os.remove(update_path)
 end
--- {0777A3}[AH by Yamada.]: {CCCCCC} ID: 2067 Text: 190~n~100.000000~n~100.000000~n~-1~n~0 / 28~n~74~n~0 : 0 ~n~0 / 0 : 0~n~0 / 0 : 0~n~0~n~0.00 ~n
 function sampev.onTextDrawSetString(id, text)
 	--sampAddChatMessage(tag .. " ID: " .. id .. " Text: " .. text)
 	if id == 2078 and setting_items.hide_td.v then
 		player_info = textSplit(text, "~n~")
 	end
 end
--- {0777A3}[AH by Yamada.]: {CCCCCC} ID: 199 Text: Score: Health: Armour: CarHP: Speed: Ping: Ammo: Shot: TimeShot: AFKTime: P.Loss: VIP: Passive Mode: Turbo: Collision:
 function sampev.onShowTextDraw(id, data)
 	--sampAddChatMessage(tag .. " ID: " .. id .. " Text: " .. data.text)
 	if (id >= 3 and id <= 38 or id == 228 or id == 2078 or id == 2050) and setting_items.hide_td.v then
@@ -725,6 +816,14 @@ function sampev.onSendCommand(command)
 end
 function sampev.onSendChat(message)
 	-- [x] -- Захват строки для дальнейшей обработки. -- [x] --
+	local id; trans_cmd = message:match("[^%s]+")
+	if trans_cmd:find("%.(.+)") ~= nil --[[and message:find("%.(.+) (%d+)") ~= nil]] then
+		trans_cmd = message:match("%.(.+)")
+		sampSendChat("/" .. RusToEng(trans_cmd))
+	--[[elseif trans_cmd:find("%.(.+)") ~= nil and message:find("%.(.+) (%d+)") == nil then
+		trans_cmd = message:match("%.(.+)")
+		sampSendChat("/" .. RusToEng(trans_cmd))]]
+	end
 	if setting_items.Punishments.v then
 		if string.match(message, "-(.+) (.+)") == nil then
 			if string.match(message, "-(.+)") ~= nil then
@@ -749,10 +848,14 @@ function sampev.onSendChat(message)
 				offline_temp_cmd = checkstr
 				offline_punishment = true
 				if punishments[checkstr] ~= nil then
+					access.cmd = "/" .. punishments[checkstr].cmd .. " " .. id .. " " .. punishments[checkstr].time .. " " .. punishments[checkstr].reason
+					access.need_access = true
 					sampSendChat("/" .. punishments[checkstr].cmd .. " " .. id .. " " .. punishments[checkstr].time .. " " .. punishments[checkstr].reason)
 					return false
 				elseif punishments[string.lower(RusToEng(checkstr))] ~= nil then
 					checkstr = string.lower(RusToEng(checkstr))
+					access.cmd = "/" .. punishments[checkstr].cmd .. " " .. id .. " " .. punishments[checkstr].time .. " " .. punishments[checkstr].reason
+					access.need_access = true
 					sampSendChat("/" .. punishments[checkstr].cmd .. " " .. id .. " " .. punishments[checkstr].time .. " " .. punishments[checkstr].reason)
 					return false
 				else
@@ -764,10 +867,14 @@ function sampev.onSendChat(message)
 				offline_temp_cmd = checkstr
 				offline_punishment = true
 				if punishments[checkstr] ~= nil then
+					access.cmd = "/" .. punishments[checkstr].cmd .. " " .. id .. " " .. tonumber(punishments[checkstr].time)*tonumber(mno) .. " " .. punishments[checkstr].reason .. " x" .. mno
+					access.need_access = true
 					sampSendChat("/" .. punishments[checkstr].cmd .. " " .. id .. " " .. tonumber(punishments[checkstr].time)*tonumber(mno) .. " " .. punishments[checkstr].reason .. " x" .. mno)
 					return false
 				elseif punishments[string.lower(RusToEng(checkstr))] ~= nil then
 					checkstr = string.lower(RusToEng(checkstr))
+					access.cmd = "/" .. punishments[checkstr].cmd .. " " .. id .. " " .. tonumber(punishments[checkstr].time)*tonumber(mno) .. " " .. punishments[checkstr].reason .. " x" .. mno
+					access.need_access = true
 					sampSendChat("/" .. punishments[checkstr].cmd .. " " .. id .. " " .. tonumber(punishments[checkstr].time)*tonumber(mno) .. " " .. punishments[checkstr].reason .. " x" .. mno)
 					return false
 				else
@@ -790,6 +897,12 @@ function RusToEng(text)
     return result and result:reverse() or result
 end
 function sampev.onServerMessage(color, text)
+	chatlog = io.open(getFileName(), "r+")
+    chatlog:seek("end", 0);
+	chatTime = "[" .. os.date("*t").hour .. ":" .. os.date("*t").min .. ":" .. os.date("*t").sec .. "] "
+    chatlog:write(chatTime .. text .. "\n")
+    chatlog:flush()
+    chatlog:close()
 	local check_string = string.match(text, "[^%s]+")
 	local _, check_mat_id, _, check_mat = string.match(text, "(.+)%((.+)%): {(.+)}(.+)")
 	local offline_nick, offline_id = text:match("(%S+)%((%d+)%){ffffff} отключился с сервера")
@@ -892,6 +1005,28 @@ function sampev.onServerMessage(color, text)
 		sampSendChat("/reoff")
 	end
 end
+function readChatlog()
+	local file_check = assert(io.open(getWorkingDirectory() .. "\\config\\AH_Setting\\chatlog\\" .. os.date("!*t").day .. "-" .. os.date("!*t").month .. "-" .. os.date("!*t").year .. ".txt", "r"))
+	local t = file_check:read("*all")
+	sampAddChatMessage(tag .. "Чтение файла", -1)
+	file_check:close()
+	t = t:gsub("{......}", "")
+	local final_text = {}
+	final_text = string.split(t, "\n")
+	sampAddChatMessage(tag .. "Файл прочитан. " .. final_text[1], -1)
+		return final_text
+end
+function  getFileName()
+    if not doesFileExist(getWorkingDirectory() .. "\\config\\AH_Setting\\chatlog\\" .. os.date("!*t").day .. "-" .. os.date("!*t").month .. "-" .. os.date("!*t").year .. ".txt") then
+        f = io.open(getWorkingDirectory() .. "\\config\\AH_Setting\\chatlog\\" .. os.date("!*t").day .. "-" .. os.date("!*t").month .. "-" .. os.date("!*t").year .. ".txt","w")
+        f:close()
+        file = string.format(getWorkingDirectory() .. "\\config\\AH_Setting\\chatlog\\" .. os.date("!*t").day .. "-" .. os.date("!*t").month .. "-" .. os.date("!*t").year .. ".txt")
+        return file
+    else
+        file = string.format(getWorkingDirectory() .. "\\config\\AH_Setting\\chatlog\\" .. os.date("!*t").day .. "-" .. os.date("!*t").month .. "-" .. os.date("!*t").year .. ".txt")
+        return file  
+    end
+end
 function sampev.onShowDialog(dialogid, _, _, _, _, _)
 	--sampAddChatMessage(tag .. dialogid)
 end
@@ -969,6 +1104,10 @@ end
 function loadPlayerInfo()
 	wait(3000)
 	accept_load = true
+end
+function loadChatLog()
+	wait(6000)
+	accept_load_clog = true
 end
 function convert3Dto2D(x, y, z)
     local result, wposX, wposY, wposZ, w, h = convert3DCoordsToScreenEx(x, y, z, true, true)
@@ -1198,6 +1337,13 @@ function isKeysDown(keylist, pressed)
     end
     return bool
 end
+function onWindowMessage(msg, wparam, lparam)
+	if(msg == 0x100 or msg == 0x101) and setting_items.Custom_SB.v then
+		if wparam == VK_TAB then
+			consumeWindowMessage(true, false)
+		end
+	end
+end
 
 -- [x] -- ImGUI тело. -- [x] --
 local W_Windows = sw/1.145
@@ -1213,11 +1359,31 @@ function imgui.OnDrawFrame()
 		imgui.Checkbox(u8"Пожелание в конце.", i_back_prefix)
 		imgui.Separator()
 		for key, v in pairs(i_ans) do
-			if imgui.Button(v, btn_size) then
-				if not i_back_prefix.v then
-					sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(v))
-				else
-					sampSetCurrentDialogEditboxText('{FFFFFF}' .. u8:decode(v) .. ' {AAAAAA}// Приятной игры на "RDS"!')
+			if key == "default" then
+				for key_2, v_2 in pairs(i_ans[key]) do
+					if imgui.Button(key_2, btn_size) then
+						if not i_back_prefix.v then
+							local settext = '{FFFFFF}' .. v_2
+							sampSendDialogResponse(2351, 1, 0, settext)
+						else
+							local settext = '{FFFFFF}' .. v_2 .. ' {AAAAAA}// Приятной игры на "RDS"!'
+							sampSendDialogResponse(2351, 1, 0, settext)
+						end
+					end
+				end
+			else
+				if imgui.CollapsingHeader(key) then
+					for key_2, v_2 in pairs(i_ans[key]) do
+						if imgui.Button(key_2, btn_size) then
+							if not i_back_prefix.v then
+								local settext = '{FFFFFF}' .. v_2
+								sampSendDialogResponse(2351, 1, 0, settext)
+							else
+								local settext = '{FFFFFF}' .. v_2 .. ' {AAAAAA}// Приятной игры на "RDS"!'
+								sampSendDialogResponse(2351, 1, 0, settext)
+							end
+						end
+					end
 				end
 			end
 		end
@@ -1239,22 +1405,26 @@ function imgui.OnDrawFrame()
 		imgui.SameLine()
 		imgui.SetCursorPosX(imgui.GetWindowWidth() - 35)
 		imgui.ToggleButton("##3", setting_items.Push_Report)
+		imgui.Text(u8"Кастомный ScoreBoard (TAB).")
+		imgui.SameLine()
+		imgui.SetCursorPosX(imgui.GetWindowWidth() - 35)
+		imgui.ToggleButton("##4", setting_items.Custom_SB)
 		imgui.Text(u8"Чат-логгер.")
 		imgui.SameLine()
 		imgui.SetCursorPosX(imgui.GetWindowWidth() - 35)
-		imgui.ToggleButton("##4", setting_items.Chat_Logger)
+		imgui.ToggleButton("##5", setting_items.Chat_Logger)
 		imgui.Text(u8"Сокращенные команды наказаний.")
 		imgui.SameLine()
 		imgui.SetCursorPosX(imgui.GetWindowWidth() - 35)
-		imgui.ToggleButton("##5", setting_items.Punishments)
+		imgui.ToggleButton("##6", setting_items.Punishments)
 		imgui.Text(u8"Админ чат.")
 		imgui.SameLine()
 		imgui.SetCursorPosX(imgui.GetWindowWidth() - 35)
-		imgui.ToggleButton("##6", setting_items.Admin_chat)
+		imgui.ToggleButton("##7", setting_items.Admin_chat)
 		imgui.Text(u8"Прозрачность админ чата.")
 		imgui.SameLine()
 		imgui.SetCursorPosX(imgui.GetWindowWidth() - 35)
-		imgui.ToggleButton("##7", setting_items.Transparency)		
+		imgui.ToggleButton("##8", setting_items.Transparency)		
 		imgui.PushItemWidth(50)
 		if imgui.InputText(u8"Размер чата.", font_size_ac) then
 			font_ac = renderCreateFont("Arial", tonumber(font_size_ac.v) or 10, font_admin_chat.BOLD + font_admin_chat.SHADOW)
@@ -1280,6 +1450,7 @@ function imgui.OnDrawFrame()
 			config.setting.Punishments = setting_items.Punishments.v
 			config.setting.Font = font_size_ac.v
 			config.setting.Tranparency = setting_items.Transparency.v
+			config.setting.Custom_SB = setting_items.Custom_SB.v
 			config.setting.Auto_remenu = setting_items.Auto_remenu.v
 			config.setting.Push_Report = setting_items.Push_Report.v
 			config.setting.Chat_Logger = setting_items.Chat_Logger.v
@@ -1386,25 +1557,18 @@ function imgui.OnDrawFrame()
 		end
 	end
 	if i_info_update.v then
-		imgui.SetNextWindowPos(imgui.ImVec2(sw/2, sh/2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 1))
+		imgui.SetNextWindowPos(imgui.ImVec2(sw/2, sh/2.5), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 1))
 		imgui.SetNextWindowSize(imgui.ImVec2(sw/1.3, -0.1), imgui.Cond.FirstUseEver)
 		imgui.Begin(u8"Чего нового в скрипте.", i_info_update)
 		imgui.Text(u8"Что было добавленно:\n")
 		imgui.SetCursorPosX(20)
-		imgui.Text(u8"- Было добавлена система авто-мута. Можно добавить в систему запрещенные слова,\n и скрипт, при обноружении данных слов в чате, мутит человека.")
-		imgui.SetCursorPosX(20)
-		imgui.TextColored(imgui.ImVec4(1.00, 0.10, 0.10, 1.00), u8"ПРЕДУПРЕЖДЕНИЕ! ")
-		imgui.SameLine()
-		imgui.Text(u8"Система мутит исключительно за мат! Такие слова, как \"Пидор\", \"Еблан\", добавлять не нужно.\n\tКоманды:\n/save_mat - добавить слово в базу.\n/del_mat - удалить слово из базы.")
+		imgui.Text(u8"- Добавил систему поиска в чат логе. /cfind или /cfind [TEXT]. Система ищет в чатлоге строчки с похожей фразой.")
 		imgui.Separator()
 		imgui.SetCursorPosX(20)
-		imgui.Text(u8"- Было поправлено меню слежки. Так как наш \"Любимый\" скриптер добавил новое меню слежки,\n в скрипте начались перебои меню.")
+		imgui.Text(u8"- Добавил долгожданный кастомный таб. В нем доступно меню по нажатию правой кнопкой мышки на игрока. Двойной щелчек по игроку\nоткрывает стандартное меню. Так же можно включить режим 'Игроки в стриминге', то бишь таб будет показывать игроков, которые находятся рядом.\nСделал меню групп. Что бы добавить человека в определенную группу, нужно открыть меню правой кнопкой мышки и внизу изменить ему желаемую группу.")
 		imgui.Separator()
 		imgui.SetCursorPosX(20)
-		imgui.Text(u8"- Добавил свой текст приветствия. Теперь вы можете изменить текст приветствия на клвишу.")
-		imgui.Separator()
-		imgui.SetCursorPosX(20)
-		imgui.Text(u8"- Изменил переключатель на /remenu. Теперь это переключатель между интерфейсами (серверным и скриптовым). ")
+		imgui.Text(u8"- Изменил окно ответа на репорт. (Спасибо Дарье Шарфовой - vk.com/dr_salvatore, ее изменение) Теперь оно более обширное, все ответы теперь скомпонованы в отдельные группы,\nа наиболее частоиспользуемые находятся под рукой (без группы).")
 		imgui.Separator()
 		imgui.SetCursorPosX(imgui.GetWindowWidth()/2)
 		if imgui.Button(u8"Выход.", imgui.ImVec2(100, 0)) then
@@ -1418,7 +1582,7 @@ function imgui.OnDrawFrame()
 		imgui.Begin(u8"Наказания игрока.", false, 2+4+32)
 			imgui.SetCursorPosX(imgui.GetWindowWidth()/2.43-160)
 			if imgui.Button(u8"Обновить.", imgui.ImVec2(75, 0)) then
-				sampSendClickTextdraw(440)
+				sampSendClickTextdraw(32)
 			end
 			imgui.SameLine()
 			imgui.SetCursorPosX(imgui.GetWindowWidth()/2.43-80)
@@ -1669,6 +1833,28 @@ function imgui.OnDrawFrame()
 				imgui.Text("Jail: -" .. v .. u8" [PlayerID] - " .. u8:encode(punishments[v].reason))
 			end
 		end
+		imgui.End()
+	end
+	if i_chat_logger.v then
+		imgui.SetNextWindowPos(imgui.ImVec2(sw/2, sh/2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 1))
+		imgui.SetNextWindowSize(imgui.ImVec2(sw/1.3, sh/1.05), imgui.Cond.FirstUseEver)
+		imgui.Begin(u8"Чат-логер", i_chat_logger)
+			if accept_load_clog then
+				imgui.InputText(u8"Поиск.", chat_find)
+				if chat_find.v == "" then
+					imgui.Text(u8'Начните вводить текст.\n')
+				else
+					for key, v in pairs(chat_logger_text) do
+						if v:find(chat_find.v) ~= nil then
+							imgui.Text(u8:encode(v))
+						end
+					end
+				end
+			else
+				imgui.SetCursorPosX(imgui.GetWindowWidth()/2.3)
+				imgui.SetCursorPosY(imgui.GetWindowHeight()/2.3)
+				imgui.Spinner(20, 7)
+			end
 		imgui.End()
 	end
 end

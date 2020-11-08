@@ -16,7 +16,7 @@ local encoding							= require "encoding"
 local vkeys								= require "lib.vkeys"
 local inicfg							= require "inicfg"
 local notfy								= import 'lib/lib_imgui_notf.lua'
-local sc_board							= import 'lib/scoreboard.lua'
+local res, sc_board						= pcall(import, 'lib/scoreboard.lua')
 --local pie								= require "imgui_piemenu"
 --local theme								= import "Module/imgui_themes.lua"
 encoding.default 						= "CP1251"
@@ -100,13 +100,18 @@ end
 apply_custom_style()
 
 -- [x] -- Переменные. -- [x] --
-update_state = false
-local script_version = 10
-local script_version_text = "2.6 BugFix and little update"
+local update_state = {
+	update_script = false,
+	update_scoreboard = false
+}
+local script_version = 12
+local script_version_text = "3.1 BugFix"
 local update_url = "https://raw.githubusercontent.com/YamadaEnotic/AH-Script/master/update.ini"
 local update_path = getWorkingDirectory() .. '/update.ini'
 local script_url = "https://raw.githubusercontent.com/YamadaEnotic/AH-Script/master/AH_Bred.lua"
 local script_path = thisScript().path
+local scoreboard_url = "https://raw.githubusercontent.com/YamadaEnotic/AH-Script/master/scoreboard.lua"
+local scoreboard_path = getWorkingDirectory() .. "\\lib\\scoreboard.lua"
 local tag = "{0777A3}[AH by Yamada.]: {CCCCCC}"
 local sw, sh = getScreenResolution()
 local directIni	= "AH_Setting\\config.ini"
@@ -586,7 +591,6 @@ function main()
 	if not doesDirectoryExist(getWorkingDirectory() .. "/config/AH_Setting/audio") then
 		createDirectory(getWorkingDirectory() .. "/config/AH_Setting/audio")
 	end
-	sc_board.ScriptData(thisScript())
 
 	sampRegisterChatCommand('ah_setting', function()
 		i_setting_items.v = not i_setting_items.v
@@ -677,6 +681,11 @@ function main()
 	load_chat_log = lua_thread.create_suspended(loadChatLog)
 	load_info_player = lua_thread.create_suspended(loadPlayerInfo)
 	wallhack = lua_thread.create(drawWallhack)
+	wait_reload = lua_thread.create_suspended(function()
+		wait(3000)
+		showNotification("Обновление!", "Библиотека успешно обновлена!")
+		thisScript():reload()
+	end)
 	check_cmd = lua_thread.create_suspended(function()
 		wait(1000)
 		check_cmd_re = false
@@ -774,7 +783,14 @@ function sampCheckUpdateScript()
 	updateIni = inicfg.load(nil, update_path)
 	if tonumber(updateIni.info.version) > script_version then
 		showNotification("Доступно обновление.", "Старая версия скрипта: {AA0000}" .. script_version_text .. "\nНовая версия скрипта: {33AA33}" .. updateIni.info.version_text)
-		update_state = true
+		update_state.update_script = true
+	end
+	if not res then
+		showNotification("Доступно обновление библиотеки.", "Старая версия библиотеки: {AA0000}Отсутствует.\nНовая версия библиотеки: {33AA33}" .. updateIni.info.sb_text_version)
+		update_state.update_scoreboard = true
+	elseif tonumber(updateIni.info.sbversion) > sc_board.version then
+		showNotification("Доступно обновление библиотеки.", "Старая версия библиотеки: {AA0000}" .. sc_board.text_version or "Отсутствует." .. "\nНовая версия библиотеки: {33AA33}" .. updateIni.info.sb_text_version)
+		update_state.update_scoreboard = true
 	end
 	os.remove(update_path)
 end
@@ -1461,7 +1477,7 @@ function imgui.OnDrawFrame()
 		imgui.Separator()
 		imgui.SetCursorPosX(imgui.GetWindowWidth()/2-100)
 		imgui.Image(logo_image, imgui.ImVec2(200, 200))
-		if update_state then
+		if update_state.update_script then
 			imgui.SetCursorPosY(imgui.GetWindowHeight() - 55)
 			imgui.Separator()
 			imgui.Text(u8"Версия скрипта: " .. script_version_text)
@@ -1474,6 +1490,21 @@ function imgui.OnDrawFrame()
 					if status == dlstat.STATUS_ENDDOWNLOADDATA then
 						showNotification("Обновление!", "Скрипт успешно обновлен!")
 						thisScript():reload()
+					end
+				end)
+			end
+		elseif update_state.update_scoreboard then
+			imgui.SetCursorPosY(imgui.GetWindowHeight() - 65)
+			imgui.Separator()
+			imgui.Text(u8"Версия скрипта: " .. script_version_text)
+			imgui.Text(u8"Доступно обновление библиотеки!\nНовая версия библиотеки: " .. updateIni.info.sb_text_version)
+			imgui.SameLine()
+			imgui.SetCursorPosX(imgui.GetWindowWidth() - 80)
+			if imgui.Button(u8"Обновить.") then
+				showNotification("Обновление!", "Началось обновление библиотеки.")
+				downloadUrlToFile(scoreboard_url, scoreboard_path, function(id, status)
+					if status == dlstat.STATUS_ENDDOWNLOADDATA then
+						wait_reload:run()
 					end
 				end)
 			end

